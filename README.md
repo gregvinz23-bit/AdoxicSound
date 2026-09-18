@@ -1,5 +1,5 @@
 # AoIP-RX
-Over the Internet Audio Receiver — a lightweight and modern Windows audio receiver.
+Over the Internet Audio Receiver — a portable Windows receiver for live MMS and Shoutcast/Icecast radio, with auto-reconnect, accurate stereo meters, and automatic balance correction.
 
 Developed by Greg Vincent. © 2026 Greg Vincent. All rights reserved.
 

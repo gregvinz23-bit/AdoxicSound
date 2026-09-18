@@ -218,8 +218,8 @@
                     <Image x:Name="LogoImage" Width="220" HorizontalAlignment="Center" Margin="0,0,0,12" RenderOptions.BitmapScalingMode="HighQuality"/>
                     <TextBlock x:Name="VersionText" Text="AoIP RX" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
                     <TextBlock Text="Developed by: Greg Vincent" HorizontalAlignment="Center" Margin="0,4"/>
-                    <TextBlock Text="Description: A lightweight and modern audio receiver"
-                               HorizontalAlignment="Center" TextWrapping="Wrap"/>
+                    <TextBlock Text="Description: A portable Windows receiver for live MMS and Shoutcast/Icecast radio — with auto-reconnect, accurate stereo meters, and automatic balance correction."
+                               HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
                     <TextBlock Text="© 2026 Greg Vincent. All rights reserved"
                                HorizontalAlignment="Center" Margin="0,4" Foreground="{DynamicResource FgDim}"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12">

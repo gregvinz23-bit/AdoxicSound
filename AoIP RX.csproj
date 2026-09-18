@@ -8,7 +8,7 @@
     <Version>1.2.0</Version>
     <Company>Greg Vincent</Company>
     <Product>AoIP RX</Product>
-    <Description>A lightweight and modern audio receiver</Description>
+    <Description>A portable Windows receiver for live MMS and Shoutcast/Icecast radio</Description>
     <Copyright>� 2026 Greg Vincent. All rights reserved</Copyright>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
