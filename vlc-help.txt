@@ -1,0 +1,7 @@
+﻿VLC version 3.0.12 Vetinari (3.0.12-1-g8aba507581)
+Compiled by chouquette on d0e32afc2f52 (May 10 2021 12:22:04)
+Compiler: gcc version 6.4.0 (GCC)
+This program comes with NO WARRANTY, to the extent permitted by law.
+You may redistribute it under the terms of the GNU General Public License;
+see the file named COPYING for details.
+Written by the VideoLAN team; see the AUTHORS file.

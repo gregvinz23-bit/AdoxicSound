@@ -1,0 +1,8 @@
+﻿/publish/
+/portable-test/
+/*.zip
+settings.json
+streams.json
+/logs/
+/obj/
+/bin/

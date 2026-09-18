@@ -1,0 +1,76 @@
+using System.IO;
+using System.Text.Json;
+
+namespace AoIP_RX.Services;
+
+public sealed class Settings
+{
+    public string? OutputDeviceId { get; set; }
+    public int SampleRate { get; set; } = 48000;
+    public bool FastMode { get; set; } = true;
+    public bool AutoBalance { get; set; } = true;
+    public bool TrayOnClose { get; set; } = true;
+    public bool StartOnBoot { get; set; } = false;
+    public bool RestoreLast { get; set; } = true;
+    public string? LastUrl { get; set; }
+    public double Width { get; set; } = 760;
+    public double Height { get; set; } = 540;
+}
+
+public sealed class StreamsFile
+{
+    public List<string> Urls { get; set; } = new();
+}
+
+/// <summary>Portable store: streams.json + settings.json next to the exe.</summary>
+public sealed class AppStore
+{
+    private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
+    private readonly string _base;
+
+    public Settings Settings { get; private set; } = new();
+    public StreamsFile Streams { get; private set; } = new();
+
+    public AppStore()
+    {
+        _base = AppDomain.CurrentDomain.BaseDirectory;
+        Load();
+        if (Streams.Urls.Count == 0)
+        {
+            Streams.Urls.Add("mms://10.88.1.247:1755");
+            Streams.Urls.Add("http://18.141.67.248:8060");
+            SaveStreams();
+        }
+    }
+
+    private void Load()
+    {
+        try
+        {
+            var p = Path.Combine(_base, "settings.json");
+            if (File.Exists(p))
+                Settings = JsonSerializer.Deserialize<Settings>(File.ReadAllText(p)) ?? new();
+        }
+        catch { }
+        try
+        {
+            var p = Path.Combine(_base, "streams.json");
+            if (File.Exists(p))
+                Streams = JsonSerializer.Deserialize<StreamsFile>(File.ReadAllText(p)) ?? new();
+        }
+        catch { }
+        if (Settings.SampleRate is not (44100 or 48000 or 96000)) Settings.SampleRate = 48000;
+    }
+
+    public void SaveSettings()
+    {
+        try { File.WriteAllText(Path.Combine(_base, "settings.json"), JsonSerializer.Serialize(Settings, Json)); }
+        catch { }
+    }
+
+    public void SaveStreams()
+    {
+        try { File.WriteAllText(Path.Combine(_base, "streams.json"), JsonSerializer.Serialize(Streams, Json)); }
+        catch { }
+    }
+}
