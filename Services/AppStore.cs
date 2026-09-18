@@ -35,12 +35,6 @@ public sealed class AppStore
     {
         _base = AppDomain.CurrentDomain.BaseDirectory;
         Load();
-        if (Streams.Urls.Count == 0)
-        {
-            Streams.Urls.Add("mms://10.88.1.247:1755");
-            Streams.Urls.Add("http://18.141.67.248:8060");
-            SaveStreams();
-        }
     }
 
     private void Load()
