@@ -80,6 +80,7 @@ public partial class MainWindow : Window
         Closing += MainWindow_Closing;
         Closed += (_, _) => { _meterTimer.Stop(); };
         _loading = false;
+        VersionText.Text = "AoIP RX v" + CurrentVersion;
         RefreshState();
         App.Log.Info("UI ready");
         if (!string.IsNullOrEmpty(App.PendingUrl))
@@ -286,27 +287,35 @@ public partial class MainWindow : Window
 
     // ---------- about / updates ----------
 
+    private static string CurrentVersion =>
+        System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.1.0";
+
     private async void UpdateButton_Click(object sender, RoutedEventArgs e)
     {
         UpdateText.Text = "Checking…";
+        var current = CurrentVersion;
         try
         {
             using var http = new HttpClient();
-            http.DefaultRequestHeaders.UserAgent.ParseAdd("AoIP-RX/1.0");
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("AoIP-RX/" + current);
             http.Timeout = TimeSpan.FromSeconds(10);
             var json = await http.GetStringAsync(
                 "https://api.github.com/repos/gregvinz23-bit/AoIP-RX/releases/latest");
             var tag = JsonDocument.Parse(json).RootElement.GetProperty("tag_name").GetString() ?? "";
             var ver = tag.TrimStart('v', 'V');
-            UpdateText.Text = ver == "1.0.0" || string.IsNullOrEmpty(ver)
-                ? "You're up to date (v1.0.0)"
-                : $"v{ver} available — see GitHub Releases";
-            try
+            if (!Version.TryParse(ver, out var latest) || !Version.TryParse(current, out var mine))
+                UpdateText.Text = "Check failed: bad version data";
+            else if (latest <= mine) UpdateText.Text = $"You're up to date (v{current})";
+            else
             {
-                if (!string.IsNullOrEmpty(ver) && ver != "1.0.0")
+                UpdateText.Text = $"v{ver} available (you have v{current}) — opening download page…";
+                App.Log.Info($"Update available: v{ver}");
+                try
+                {
                     Process.Start(new ProcessStartInfo("https://github.com/gregvinz23-bit/AoIP-RX/releases") { UseShellExecute = true });
+                }
+                catch { }
             }
-            catch { }
         }
         catch (Exception ex) { UpdateText.Text = "Check failed: " + ex.Message; }
     }

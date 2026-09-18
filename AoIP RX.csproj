@@ -5,11 +5,11 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <RootNamespace>AoIP_RX</RootNamespace>
     <AssemblyName>AoIP-RX</AssemblyName>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Company>Greg Vincent</Company>
     <Product>AoIP RX</Product>
     <Description>A lightweight and modern audio receiver</Description>
-    <Copyright>© 2026 Greg Vincent. All rights reserved</Copyright>
+    <Copyright>ï¿½ 2026 Greg Vincent. All rights reserved</Copyright>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>

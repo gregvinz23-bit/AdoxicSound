@@ -32,7 +32,8 @@ public partial class App : System.Windows.Application
         ApplyStartOnBoot();
         SetupTray();
         PendingUrl = e.Args.FirstOrDefault(a => a.Contains("://")) ?? "";
-        Log.Info("AoIP RX v1.0 started");
+        var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?";
+        Log.Info($"AoIP RX v{v} started");
     }
 
     public void SetupTray()
