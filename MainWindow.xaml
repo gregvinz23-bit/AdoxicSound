@@ -215,7 +215,7 @@
             <TabItem Header="About">
                 <StackPanel MaxWidth="640" HorizontalAlignment="Center" Margin="16"
                             VerticalAlignment="Center" Background="{DynamicResource BgWindow}">
-                    <Image x:Name="LogoImage" Width="220" HorizontalAlignment="Center" Margin="0,0,0,12" RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <Image x:Name="LogoImage" Width="150" HorizontalAlignment="Center" Margin="0,0,0,8" RenderOptions.BitmapScalingMode="HighQuality"/>
                     <TextBlock x:Name="VersionText" Text="AoIP RX" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
                     <TextBlock Text="Developed by: Greg Vincent" HorizontalAlignment="Center" Margin="0,4"/>
                     <TextBlock Text="Description: A portable Windows receiver for live MMS and Shoutcast/Icecast radio — with auto-reconnect, accurate stereo meters, and automatic balance correction."
