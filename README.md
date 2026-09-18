@@ -1,7 +1,7 @@
 # AoIP-RX
 Over the Internet Audio Receiver — a portable Windows receiver for live MMS and Shoutcast/Icecast radio, with auto-reconnect, accurate stereo meters, and automatic balance correction.
 
-Developed by Greg Vincent. © 2026 Greg Vincent. All rights reserved.
+Developed by Greg Vincent. © 2026 Mantraix Software. All rights reserved.
 
 ## What it does
 - Plays live audio from `mms://` (Windows Media) and `http(s)://` Shoutcast/Icecast streams

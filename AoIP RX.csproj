@@ -6,10 +6,10 @@
     <RootNamespace>AoIP_RX</RootNamespace>
     <AssemblyName>AoIP-RX</AssemblyName>
     <Version>1.2.0</Version>
-    <Company>Greg Vincent</Company>
+    <Company>Mantraix Software</Company>
     <Product>AoIP RX</Product>
     <Description>A portable Windows receiver for live MMS and Shoutcast/Icecast radio</Description>
-    <Copyright>� 2026 Greg Vincent. All rights reserved</Copyright>
+    <Copyright>� 2026 Mantraix Software. All rights reserved</Copyright>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
