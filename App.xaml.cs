@@ -15,6 +15,7 @@ public partial class App : System.Windows.Application
     public AppStore Store { get; private set; } = null!;
     public Logger Log { get; private set; } = null!;
     public StreamEngine Engine { get; private set; } = null!;
+    public DeviceWatcher Watcher { get; private set; } = null!;
     public Icon? TrayIcon { get; private set; }
     public string PendingUrl { get; private set; } = "";
 
@@ -31,6 +32,8 @@ public partial class App : System.Windows.Application
         Engine.AutoBalance = Store.Settings.AutoBalance;
         ApplyStartOnBoot();
         SetupTray();
+        Watcher = new DeviceWatcher();
+        try { Watcher.Start(); } catch (Exception ex) { Log.Warn("Hot-plug monitor off: " + ex.Message); }
         PendingUrl = e.Args.FirstOrDefault(a => a.Contains("://")) ?? "";
         var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?";
         Log.Info($"AoIP RX v{v} started");
@@ -73,6 +76,11 @@ public partial class App : System.Windows.Application
         _tray.DoubleClick += (_, _) => Restore();
     }
 
+    public void NotifyBalloon(string title, string text)
+    {
+        try { _tray?.ShowBalloonTip(5000, title, text, WinForms.ToolTipIcon.Warning); } catch { }
+    }
+
     public void Restore()
     {
         var w = MainWindow;
@@ -100,6 +108,7 @@ public partial class App : System.Windows.Application
     protected override void OnExit(ExitEventArgs e)
     {
         try { Store.SaveSettings(); } catch { }
+        try { Watcher.Dispose(); } catch { }
         try { if (_tray != null) { _tray.Visible = false; _tray.Dispose(); } } catch { }
         try { Engine.Dispose(); } catch { }
         base.OnExit(e);

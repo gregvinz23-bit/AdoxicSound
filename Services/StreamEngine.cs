@@ -58,6 +58,9 @@ public sealed class StreamEngine : IDisposable
     public string StatusText { get; private set; } = "Ready";
     public string DetailText { get; private set; } = "";
     public int Attempt => _attempt;
+    public string? ActiveDeviceId { get; private set; }
+    public string CurrentUrl => _url;
+    public bool IsPlayingAudio => State == EngineState.Playing && !_noOutput;
     public double BalanceDbL => _gainDbL;
     public double BalanceDbR => _gainDbR;
 
@@ -116,6 +119,15 @@ public sealed class StreamEngine : IDisposable
         _lastDiff = 0;
         _engaged = false;
         _imbalanceLogged = false;
+        _sessionStarted = false;
+        _healthySec = 0;
+        _sessionDrops = 0;
+        _underruns = 0;
+        _underrunArmed = true;
+        _downSince = null;
+        _dropReason = null;
+        _silenceAlarmed = false;
+        _lastAudibleUtc = DateTime.UtcNow;
         _cts = new CancellationTokenSource();
         var ct = _cts.Token;
         _loop = Task.Run(() => RunLoop(ct));
@@ -129,7 +141,9 @@ public sealed class StreamEngine : IDisposable
     public void Stop()
     {
         _userStop = true;
+        FlushLifetime();
         StopInternal(user: true);
+        _downSince = null;
         SetState(EngineState.Stopped, "Stopped", "");
     }
 
@@ -171,6 +185,7 @@ public sealed class StreamEngine : IDisposable
             {
                 var ok = await TryOnce(current, ct);
                 if (ok) return; // played until user stopped
+                RegisterDrop(_dropReason ?? "reconnect");
             }
             catch (OperationCanceledException) { return; }
             catch (Exception ex) { _log.Warn($"Attempt #{_attempt} error: {ex.Message}"); }
@@ -208,27 +223,31 @@ public sealed class StreamEngine : IDisposable
         _player.EndReached += (_, _) => { if (!_userStop) OnDone(); };
         _player.EncounteredError += (_, _) => OnDone();
 
-        if (!_player.Play()) { _log.Error("Player refused to start"); return false; }
+        if (!_player.Play()) { _log.Error("Player refused to start"); _dropReason = "start refused"; return false; }
 
         // wait for first audio (or error/end) up to 20s
         var okStart = await WaitForAudioOrDone(played.Task, TimeSpan.FromSeconds(20), ct);
-        if (!okStart) { _log.Warn("No audio received (timeout)"); return false; }
+        if (!okStart) { _log.Warn("No audio received (timeout)"); _dropReason = "no audio (timeout)"; return false; }
 
         SetState(EngineState.Playing, "Playing", "");
         RefreshTrackInfo();
         _log.Info("Playing: " + DetailText);
+        NoteRecovered();
 
-        // stall watchdog: PCM gap > 5s while supposed to play => reconnect
+        // health watchdog, 1s tick: stall => reconnect, silence => alarm
         while (!ct.IsCancellationRequested && !_userStop)
         {
             var done = await Task.WhenAny(played.Task, Task.Delay(1000, ct));
-            if (done == played.Task) return _userStop; // ended/error: false => reconnect
+            if (done == played.Task) { _dropReason = "ended/error"; return _userStop; } // false => reconnect
+            if (IsPlayingAudio) _healthySec++;
             var gap = DateTime.UtcNow - new DateTime(Interlocked.Read(ref _pcmTicks), DateTimeKind.Utc);
-            if (_player?.IsPlaying == true && gap > TimeSpan.FromSeconds(5))
+            if (!_noOutput && _player?.IsPlaying == true && gap > TimeSpan.FromSeconds(5))
             {
                 _log.Warn("Stall: no audio for 5s");
+                _dropReason = "stall 5s";
                 return false;
             }
+            CheckSilence();
             PollMeta();
         }
         return true;
@@ -252,18 +271,39 @@ public sealed class StreamEngine : IDisposable
     private void EnsureOutput()
     {
         if (_out != null) return;
-        _device = PickDevice();
-        var fmt = new WaveFormat(_rate, 16, 2);
-        _tap = new BufferedWaveProvider(fmt)
+        try
         {
-            BufferDuration = TimeSpan.FromSeconds(5),
-            DiscardOnBufferOverflow = true
-        };
-        _out = new WasapiOut(_device, AudioClientShareMode.Shared, false, 100);
-        _out.Init(_tap);
-        _out.Volume = 1.0f;
-        _out.Play();
-        _log.Info($"Output: {_device.FriendlyName} @ {_rate}Hz");
+            _device = PickDevice();
+            var fmt = new WaveFormat(_rate, 16, 2);
+            _tap = new BufferedWaveProvider(fmt)
+            {
+                BufferDuration = TimeSpan.FromSeconds(5),
+                DiscardOnBufferOverflow = true
+            };
+            _out = new WasapiOut(_device, AudioClientShareMode.Shared, false, 100);
+            _out.Init(_tap);
+            _out.Volume = 1.0f;
+            _out.Play();
+            ActiveDeviceId = _device.ID;
+            if (_noOutput)
+            {
+                _noOutput = false;
+                _log.Info("Output restored: " + _device.FriendlyName);
+                NoteRecovered();
+            }
+            else _log.Info($"Output: {_device.FriendlyName} @ {_rate}Hz");
+        }
+        catch
+        {
+            CleanupAudio();
+            ActiveDeviceId = null;
+            if (!_noOutput)
+            {
+                _noOutput = true;
+                _log.Error("No audio output available — waiting for device");
+                SetState(State, "No output — waiting for device", DetailText);
+            }
+        }
     }
 
     private MMDevice PickDevice()
@@ -283,13 +323,39 @@ public sealed class StreamEngine : IDisposable
         try
         {
             EnsureOutput();
+            if (_noOutput || _tap == null)
+            {
+                Interlocked.Exchange(ref _pcmTicks, DateTime.UtcNow.Ticks);
+                return; // hold the stream, drop PCM until a device exists
+            }
             int bytes = checked((int)count * 4); // S16N stereo
             if (bytes <= 0 || bytes > 1 << 20) return;
+            // buffer underrun watch: speaker starved (glitch) -> count transitions only
+            var lowMark = _tap.WaveFormat.AverageBytesPerSecond / 5;
+            if (_tap.BufferedBytes < lowMark)
+            {
+                if (_underrunArmed) { _underruns++; _underrunArmed = false; }
+            }
+            else if (_tap.BufferedBytes > _tap.WaveFormat.AverageBytesPerSecond) _underrunArmed = true;
             var buf = new byte[bytes];
             Marshal.Copy(samples, buf, 0, bytes);
             ProcessPcm16(buf);
             _tap?.AddSamples(buf, 0, bytes);
             Interlocked.Exchange(ref _pcmTicks, DateTime.UtcNow.Ticks);
+            if (!_sessionStarted)
+            {
+                _sessionStarted = true;
+                _sessionStartUtc = DateTime.UtcNow;
+            }
+            if (_peakL > 0.0032f || _peakR > 0.0032f) // audible (~-50dB)
+            {
+                if (_silenceAlarmed)
+                {
+                    _silenceAlarmed = false;
+                    _log.Info("Sound back after silence");
+                }
+                _lastAudibleUtc = DateTime.UtcNow;
+            }
         }
         catch { }
     }
@@ -425,7 +491,21 @@ public sealed class StreamEngine : IDisposable
         catch { }
     }
 
+    private string? _dropReason;
     private string? _meta = "";
+    private bool _noOutput;
+    private DateTime _lastAudibleUtc = DateTime.UtcNow;
+    private DateTime _sessionStartUtc;
+    private bool _sessionStarted;
+    private long _healthySec;
+    private int _sessionDrops;
+    private long _underruns;
+    private bool _underrunArmed = true;
+    private DateTime _lastDropAlarm = DateTime.MinValue;
+    private DateTime _lastSilenceAlarm = DateTime.MinValue;
+    private bool _silenceAlarmed;
+    private DateTime? _downSince;
+    private int _alarmsToday;
     private void PollMeta()
     {
         try
@@ -450,6 +530,121 @@ public sealed class StreamEngine : IDisposable
     private static string FourCC(uint c) =>
         new string(new[] { (char)(c & 0xFF), (char)((c >> 8) & 0xFF), (char)((c >> 16) & 0xFF), (char)((c >> 24) & 0xFF) })
         .Trim('\0', ' ');
+
+    // ---------- drops, alarms, stats ----------
+
+    public int SessionDrops => _sessionDrops;
+    public long SessionHealthySec => _healthySec;
+    public long Underruns => _underruns;
+    public int AlarmsToday => _alarmsToday;
+    public DateTime? DownSince => _downSince;
+
+    public string StatsLine(out string lifetime)
+    {
+        lifetime = "";
+        var up = _sessionStarted
+            ? TimeSpan.FromSeconds(_healthySec).ToString(@"hh\:mm\:ss")
+            : "--:--:--";
+        var s = $"Up {up} · Drops {_sessionDrops} · Glitches {_underruns} · Alarms {_alarmsToday}";
+        try
+        {
+            if (App.Current is App app && app.Store.Settings.UrlStats.TryGetValue(_url, out var r))
+                lifetime = $"Lifetime: {r.Drops} drops · {TimeSpan.FromSeconds(r.HealthySec):hh\\:mm\\:ss} healthy";
+        }
+        catch { }
+        return s;
+    }
+
+    private UrlStatRecord Lifetime()
+    {
+        if (App.Current is not App app) return new UrlStatRecord();
+        var d = app.Store.Settings.UrlStats;
+        if (!d.TryGetValue(_url, out var r)) { r = new UrlStatRecord(); d[_url] = r; }
+        return r;
+    }
+
+    private void FlushLifetime()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(_url)) return;
+            var r = Lifetime();
+            r.HealthySec += _healthySec;
+            _healthySec = 0;
+            if (App.Current is App app) app.Store.SaveSettings();
+        }
+        catch { }
+    }
+
+    private void RegisterDrop(string reason)
+    {
+        _sessionDrops++;
+        try
+        {
+            var r = Lifetime();
+            r.Drops++;
+            r.HealthySec += _healthySec;
+            _healthySec = 0;
+            if (App.Current is App app) app.Store.SaveSettings();
+        }
+        catch { }
+        _downSince ??= DateTime.UtcNow;
+        if (App.Current is not App app2 || !app2.Store.Settings.AlarmEnabled) return;
+        if ((DateTime.UtcNow - _lastDropAlarm).TotalMinutes < 5) return;
+        _lastDropAlarm = DateTime.UtcNow;
+        _alarmsToday++;
+        _log.Error($"Stream lost ({reason}) — retrying…");
+        app2.NotifyBalloon("AoIP RX — stream lost", $"{ShortUrl()} ({reason}) — retrying…");
+    }
+
+    private void NoteRecovered()
+    {
+        if (_downSince == null) return;
+        var gap = DateTime.UtcNow - _downSince.Value;
+        _downSince = null;
+        _log.Info($"Recovered after {gap:hh\\:mm\\:ss}");
+    }
+
+    private void CheckSilence()
+    {
+        if (App.Current is not App app || !app.Store.Settings.AlarmEnabled) return;
+        if (!IsPlayingAudio || _silenceAlarmed) return;
+        var quietFor = (DateTime.UtcNow - _lastAudibleUtc).TotalSeconds;
+        if (quietFor < app.Store.Settings.SilenceSeconds) return;
+        _silenceAlarmed = true;
+        if ((DateTime.UtcNow - _lastSilenceAlarm).TotalMinutes < 5) return;
+        _lastSilenceAlarm = DateTime.UtcNow;
+        _alarmsToday++;
+        _log.Error($"Silence {(int)quietFor}s on {ShortUrl()}");
+        app.NotifyBalloon("AoIP RX — silence", $"No audio for {(int)quietFor}s on {ShortUrl()}");
+    }
+
+    private string ShortUrl()
+    {
+        var u = _url;
+        return u.Length > 42 ? u[..42] + "…" : u;
+    }
+
+    /// <summary>Called when the active output device disappears: fall back to default.</summary>
+    public void OnOutputLost(string deviceId)
+    {
+        if (State == EngineState.Stopped) return;
+        if (!string.IsNullOrEmpty(ActiveDeviceId) && ActiveDeviceId != deviceId) return;
+        _log.Error("Output device lost — switching to default");
+        try
+        {
+            if (App.Current is App app)
+            {
+                app.Store.Settings.OutputDeviceId = null;
+                app.Store.SaveSettings();
+            }
+        }
+        catch { }
+        CleanupAudio();
+        ActiveDeviceId = null;
+        _dropReason = "output lost";
+        RegisterDrop("output lost");
+    }
 
     private void SetState(EngineState s, string text, string detail)
     {

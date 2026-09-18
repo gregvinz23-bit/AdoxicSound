@@ -162,6 +162,10 @@
                         <ProgressBar x:Name="MeterR" Grid.Row="1" Grid.Column="1" Style="{StaticResource Meter}" Margin="4,2"/>
                         <TextBlock x:Name="DbR" Grid.Row="1" Grid.Column="2" Text="-∞ dB" FontFamily="Consolas"/>
                     </Grid>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2">
+                        <TextBlock x:Name="StatsText" Text="Up --:--:-- · Drops 0" Foreground="{DynamicResource FgDim}" FontSize="11" VerticalAlignment="Center"/>
+                        <Button x:Name="StatsReset" Content="Reset" Click="StatsReset_Click" FontSize="10" Padding="6,1" Margin="6,0,0,0"/>
+                    </StackPanel>
                 </StackPanel>
             </TabItem>
 
@@ -201,6 +205,12 @@
                     <TextBlock x:Name="RateLabel" Text="48000 Hz" HorizontalAlignment="Center" Margin="0,0,0,12"/>
                     <CheckBox x:Name="ModeToggle" Content="Stable buffering (off = fast start)" Style="{StaticResource Toggle}"
                               Margin="0,6" Checked="ModeToggle_Changed" Unchecked="ModeToggle_Changed"/>
+                    <CheckBox x:Name="AlarmToggle" Content="Alarm on silence / drop" Style="{StaticResource Toggle}"
+                              Margin="0,6" Checked="AlarmToggle_Changed" Unchecked="AlarmToggle_Changed"/>
+                    <TextBlock Text="Silence alarm after" FontWeight="Bold" Margin="0,6,0,0"/>
+                    <Slider x:Name="SilenceSlider" Minimum="10" Maximum="300" Value="30" TickFrequency="10"
+                            IsSnapToTickEnabled="True" Margin="0,4" ValueChanged="SilenceSlider_Changed"/>
+                    <TextBlock x:Name="SilenceLabel" Text="30 s" HorizontalAlignment="Center" Margin="0,0,0,6"/>
                     <CheckBox x:Name="BalanceToggle" Content="Auto balance" Style="{StaticResource Toggle}"
                               Margin="0,6" Checked="BalanceToggle_Changed" Unchecked="BalanceToggle_Changed"/>
                     <CheckBox x:Name="TrayToggle" Content="Minimize to tray on close" Style="{StaticResource Toggle}"

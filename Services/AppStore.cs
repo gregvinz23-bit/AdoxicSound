@@ -11,10 +11,19 @@ public sealed class Settings
     public bool AutoBalance { get; set; } = true;
     public bool TrayOnClose { get; set; } = true;
     public bool StartOnBoot { get; set; } = false;
+    public bool AlarmEnabled { get; set; } = true;
+    public int SilenceSeconds { get; set; } = 30;
     public bool RestoreLast { get; set; } = true;
     public string? LastUrl { get; set; }
     public double Width { get; set; } = 760;
     public double Height { get; set; } = 540;
+    public Dictionary<string, UrlStatRecord> UrlStats { get; set; } = new();
+}
+
+public sealed class UrlStatRecord
+{
+    public long Drops { get; set; }
+    public long HealthySec { get; set; }
 }
 
 public sealed class StreamsFile
@@ -54,6 +63,8 @@ public sealed class AppStore
         }
         catch { }
         if (Settings.SampleRate is not (44100 or 48000 or 96000)) Settings.SampleRate = 48000;
+        if (Settings.SilenceSeconds < 10 || Settings.SilenceSeconds > 300) Settings.SilenceSeconds = 30;
+        Settings.UrlStats ??= new();
     }
 
     public void SaveSettings()

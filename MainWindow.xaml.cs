@@ -23,6 +23,7 @@ public partial class MainWindow : Window
     private App App => (App)Application.Current;
     private readonly ObservableCollection<string> _streams = new();
     private readonly DispatcherTimer _meterTimer = new();
+    private readonly DispatcherTimer _slowTimer = new();
     private string _logFilter = "All";
     private bool _loading = true;
     private float _dispL, _dispR;
@@ -65,6 +66,9 @@ public partial class MainWindow : Window
         BalanceToggle.IsChecked = App.Store.Settings.AutoBalance;
         TrayToggle.IsChecked = App.Store.Settings.TrayOnClose;
         BootToggle.IsChecked = App.Store.Settings.StartOnBoot;
+        AlarmToggle.IsChecked = App.Store.Settings.AlarmEnabled;
+        SilenceSlider.Value = App.Store.Settings.SilenceSeconds;
+        SilenceLabel.Text = $"{App.Store.Settings.SilenceSeconds} s";
 
         if (!string.IsNullOrEmpty(App.Store.Settings.LastUrl))
         {
@@ -76,9 +80,16 @@ public partial class MainWindow : Window
         _meterTimer.Interval = TimeSpan.FromMilliseconds(25);
         _meterTimer.Tick += (_, _) => RefreshMeters();
         _meterTimer.Start();
+        _slowTimer.Interval = TimeSpan.FromSeconds(1);
+        _slowTimer.Tick += (_, _) => { RefreshState(); RefreshStats(); };
+        _slowTimer.Start();
+
+        App.Watcher.DeviceAdded += () => Dispatcher.BeginInvoke(() => App.Log.Info("Audio device added"));
+        App.Watcher.DeviceRemoved += id => Dispatcher.BeginInvoke(() => OnDeviceLost(id));
+        App.Watcher.DevicesChanged += () => Dispatcher.BeginInvoke(() => RefreshDevices());
 
         Closing += MainWindow_Closing;
-        Closed += (_, _) => { _meterTimer.Stop(); };
+        Closed += (_, _) => { _meterTimer.Stop(); _slowTimer.Stop(); };
         _loading = false;
         VersionText.Text = "AoIP RX v" + CurrentVersion;
         RefreshState();
@@ -188,11 +199,43 @@ public partial class MainWindow : Window
 
     private void RefreshDevices()
     {
+        var keep = App.Store.Settings.OutputDeviceId;
         _devs = StreamEngine.ListDevices();
         var names = _devs.Select(d => d.Name + (d.Default ? " (default)" : "")).ToList();
         if (names.Count == 0) names.Add("No output found — plug in a device");
         SetDeviceCombo.ItemsSource = names;
+        var i = _devs.FindIndex(d => d.Id == keep);
+        if (i < 0) i = Math.Max(0, _devs.FindIndex(d => d.Default));
+        if (_devs.Count == 0) i = 0;
+        SetDeviceCombo.SelectedIndex = i;
         if (_devs.Count == 0) App.Log.Warn("No audio output devices found");
+    }
+
+    private void OnDeviceLost(string id)
+    {
+        App.Log.Warn("Audio device removed");
+        App.Engine.OnOutputLost(id);
+        RefreshDevices();
+        RefreshState();
+    }
+
+    private void RefreshStats()
+    {
+        StatsText.Text = App.Engine.StatsLine(out var life);
+        if (!string.IsNullOrEmpty(life)) StatsText.Text += "  |  " + life;
+        if (App.Engine.DownSince is DateTime since)
+            StatsText.Text += $"  |  DOWN {DateTime.UtcNow - since:hh\\:mm\\:ss}";
+    }
+
+    private void StatsReset_Click(object sender, RoutedEventArgs e)
+    {
+        var url = App.Engine.CurrentUrl;
+        if (!string.IsNullOrEmpty(url) && App.Store.Settings.UrlStats.Remove(url))
+        {
+            App.Store.SaveSettings();
+            App.Log.Info("Lifetime stats cleared for this stream");
+            RefreshStats();
+        }
     }
 
     private void SetDeviceSelection(string? id)
@@ -218,6 +261,23 @@ public partial class MainWindow : Window
         App.Store.Settings.FastMode = ModeToggle.IsChecked != true;
         App.Store.SaveSettings();
         App.Log.Info("Mode: " + (App.Store.Settings.FastMode ? "Fast start 300ms" : "Stable 1000ms") + " (applies on next play)");
+    }
+
+    private void AlarmToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        App.Store.Settings.AlarmEnabled = AlarmToggle.IsChecked == true;
+        App.Store.SaveSettings();
+        App.Log.Info("Alarms " + (App.Store.Settings.AlarmEnabled ? "ON" : "OFF"));
+    }
+
+    private void SilenceSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        var s = Math.Clamp((int)SilenceSlider.Value, 10, 300);
+        if (SilenceLabel != null) SilenceLabel.Text = $"{s} s";
+        if (_loading) return;
+        App.Store.Settings.SilenceSeconds = s;
+        App.Store.SaveSettings();
     }
 
     private void RateSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -282,8 +342,16 @@ public partial class MainWindow : Window
     private void ExportButton_Click(object sender, RoutedEventArgs e)
     {
         var items = LogList.ItemsSource as System.Collections.IEnumerable;
-        var lines = items?.Cast<object>().Select(o => o?.ToString() ?? "") ?? Enumerable.Empty<string>();
-        var path = App.Log.ExportView(lines);
+        var lines = (items?.Cast<object>().Select(o => o?.ToString() ?? "") ?? Enumerable.Empty<string>()).ToList();
+        var head = new List<string>
+        {
+            $"AoIP RX log export {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
+            $"Stream: {App.Engine.CurrentUrl}",
+            $"Session: {App.Engine.StatsLine(out var life)}",
+        };
+        if (!string.IsNullOrEmpty(life)) head.Add(life);
+        head.Add(new string('-', 40));
+        var path = App.Log.ExportView(head.Concat(lines));
         App.Log.Info("Logs exported: " + path);
         ApplyFilter();
     }
