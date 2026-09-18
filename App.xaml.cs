@@ -41,19 +41,20 @@ public partial class App : System.Windows.Application
         _trayRegistered = true;
         try
         {
-            Bitmap? bmp = null;
-            var logo = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logo.png");
-            if (File.Exists(logo)) bmp = new Bitmap(logo);
-            else
+            var exeIcon = System.Drawing.Icon.ExtractAssociatedIcon(Environment.ProcessPath!);
+            if (exeIcon != null) TrayIcon = (Icon)exeIcon.Clone();
+            if (TrayIcon == null)
             {
-                var s = System.Windows.Application.GetResourceStream(
-                    new Uri("pack://application:,,,/Logo.png"))?.Stream;
-                if (s != null) { bmp = new Bitmap(s); s.Dispose(); }
-            }
-            if (bmp != null)
-            {
-                TrayIcon = Icon.FromHandle(bmp.GetHicon());
-                bmp.Dispose();
+                Bitmap? bmp = null;
+                var logo = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logo.png");
+                if (File.Exists(logo)) bmp = new Bitmap(logo);
+                else
+                {
+                    var ps = System.Windows.Application.GetResourceStream(
+                        new Uri("pack://application:,,,/Logo.png"))?.Stream;
+                    if (ps != null) { bmp = new Bitmap(ps); ps.Dispose(); }
+                }
+                if (bmp != null) { TrayIcon = Icon.FromHandle(bmp.GetHicon()); bmp.Dispose(); }
             }
         }
         catch { }

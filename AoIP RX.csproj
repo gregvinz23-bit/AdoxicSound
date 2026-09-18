@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -9,17 +9,53 @@
     <Company>Greg Vincent</Company>
     <Product>AoIP RX</Product>
     <Description>A lightweight and modern audio receiver</Description>
-    <Copyright>© 2026 Greg Vincent. All rights reserved</Copyright>
+    <Copyright>� 2026 Greg Vincent. All rights reserved</Copyright>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <VlcWindowsX86Enabled>false</VlcWindowsX86Enabled>
     <VlcWindowsArm64Enabled>false</VlcWindowsArm64Enabled>
+    <ApplicationIcon>AoIP_RX_Icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <Resource Include="Logo.png" />
+    <Resource Include="AoIP_RX_Icon.ico" />
+  </ItemGroup>
+
+  <!-- Audio-only VLC diet: drop video/subtitle/stream-out/discovery plugins + video-only codecs -->
+  <ItemGroup>
+    <VlcWindowsX64ExcludeFiles Include="plugins\video_output\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\video_filter\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\video_chroma\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\video_splitter\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\d3d11\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\d3d9\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\spu\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\text_renderer\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\visualization\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\stream_out\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\access_output\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\services_discovery\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\mux\%2A%2A" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libvpx_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libaom_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libx26410b_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libdav1d_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libschroedinger_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libtheora_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libdxva2_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libd3d11va_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libjpeg_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libpng_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libsdl_image_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libass_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libqsv_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libcrystalhd_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\librawvideo_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\librtpvideo_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libzvbi_plugin.dll" />
   </ItemGroup>
 
   <ItemGroup>

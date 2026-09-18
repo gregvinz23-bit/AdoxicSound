@@ -45,7 +45,11 @@ public sealed class StreamEngine : IDisposable
     private double _sumSqL, _sumSqR;
     private long _sumN;
     private DateTime _windowStart = DateTime.UtcNow;
-    private DateTime _imbalancedSince;
+    private DateTime _imbalancedSince = DateTime.UtcNow;
+    private DateTime _lastImbalance = DateTime.MinValue;
+    private DateTime _lastBalanceLog = DateTime.MinValue;
+    private double _lastDiff;
+    private bool _engaged;
     private bool _imbalanceLogged;
     private bool _autoBalance = true;
 
@@ -66,7 +70,14 @@ public sealed class StreamEngine : IDisposable
     public bool AutoBalance
     {
         get => _autoBalance;
-        set { _autoBalance = value; if (!value) { _gainDbL = _gainDbR = 0; } }
+        set
+        {
+            _autoBalance = value;
+            _gainDbL = _gainDbR = 0;
+            _engaged = false;
+            _lastImbalance = DateTime.MinValue;
+            _imbalanceLogged = false;
+        }
     }
 
     public void Configure(int sampleRate, bool fastMode)
@@ -105,6 +116,9 @@ public sealed class StreamEngine : IDisposable
         _gainDbL = _gainDbR = 0;
         _sumSqL = _sumSqR = 0; _sumN = 0;
         _imbalancedSince = DateTime.UtcNow;
+        _lastImbalance = DateTime.MinValue;
+        _lastDiff = 0;
+        _engaged = false;
         _imbalanceLogged = false;
         _cts = new CancellationTokenSource();
         var ct = _cts.Token;
@@ -151,8 +165,8 @@ public sealed class StreamEngine : IDisposable
         while (!ct.IsCancellationRequested && !_userStop)
         {
             _attempt++;
-            // MMS fallback: 2nd attempt tries http:// variant (MMSH-over-HTTP)
-            if (_attempt == 2 && current.StartsWith("mms://", StringComparison.OrdinalIgnoreCase))
+            // MMS fallback: 3rd attempt tries http:// variant (MMSH-over-HTTP)
+            if (_attempt >= 3 && current.StartsWith("mms://", StringComparison.OrdinalIgnoreCase))
             {
                 current = "http://" + current[6..];
                 _log.Warn($"MMS retry via fallback {current}");
@@ -308,16 +322,15 @@ public sealed class StreamEngine : IDisposable
             if (aR > peakR) peakR = aR;
         }
         _peakL = peakL; _peakR = peakR;
+        // fast attack, smooth release toward the latest block peak
+        _showL = Math.Max(_peakL, _showL * 0.90f);
+        _showR = Math.Max(_peakR, _showR * 0.90f);
+        LevelsChanged?.Invoke();
         UpdateBalance();
     }
 
     private void UpdateBalance()
     {
-        // decay shown levels toward block peak
-        _showL += (_peakL - _showL) * 0.6f;
-        _showR += (_peakR - _showR) * 0.6f;
-        LevelsChanged?.Invoke();
-
         if (!_autoBalance || _sumN < (uint)_rate) return; // ~1s of audio
         var rmsL = Math.Sqrt(_sumSqL / _sumN);
         var rmsR = Math.Sqrt(_sumSqR / _sumN);
@@ -325,25 +338,51 @@ public sealed class StreamEngine : IDisposable
 
         double dbL = 20 * Math.Log10(rmsL + 1e-9);
         double dbR = 20 * Math.Log10(rmsR + 1e-9);
-        if (dbL < -50 || dbR < -50) { _imbalancedSince = DateTime.UtcNow; _imbalanceLogged = false; return; } // silence/one dead
-        double diff = dbL - dbR; // + => L louder at source
-        if (Math.Abs(diff) < 2) { _imbalancedSince = DateTime.UtcNow; _imbalanceLogged = false; return; }
-        if (Math.Abs(diff) > 10) return; // assume intentional wide stereo
-        if ((DateTime.UtcNow - _imbalancedSince).TotalSeconds < 5) return;
+        if (dbL < -50 || dbR < -50) return; // silence / dead channel: hold gains
+        double diff = dbL - dbR; // + => L louder at source (pre-gain measurement)
+        var now = DateTime.UtcNow;
+        if (Math.Abs(diff) >= 2 && Math.Abs(diff) <= 10)
+        {
+            if ((now - _lastImbalance).TotalSeconds > 10) _imbalancedSince = now; // new episode
+            _lastImbalance = now;
+            _lastDiff = diff;
+        }
 
-        // slew the weaker channel's boost toward the measured gap (max +6dB)
-        if (diff > 0) _gainDbR = Math.Min(6, _gainDbR + 0.5);
-        else _gainDbL = Math.Min(6, _gainDbL + 0.5);
+        // engage only after 5s of sustained imbalance; release 10s after it stops
+        if (!_engaged && (now - _imbalancedSince).TotalSeconds < 5) return;
+        if ((now - _lastImbalance).TotalSeconds > 10)
+        {
+            if (_engaged && (_gainDbL > 0 || _gainDbR > 0))
+                _log.Info("Auto-balance released (source balanced)");
+            _engaged = false;
+        }
+        else _engaged = true;
+        if (!_engaged) return;
+
+        // targets from the last measured gap: boost weaker channel only, max +6dB
+        double tL = 0, tR = 0;
+        if (_lastDiff > 0) tR = Math.Min(6, _lastDiff);
+        else tL = Math.Min(6, -_lastDiff);
+
+        double before = _gainDbL + _gainDbR;
+        _gainDbR = MoveToward(_gainDbR, tR, 0.5);
+        _gainDbL = MoveToward(_gainDbL, tL, 0.5);
         if (!_imbalanceLogged)
         {
             _imbalanceLogged = true;
+            _lastBalanceLog = now;
             _log.Info($"Auto-balance engaged (L {dbL:F1}dB / R {dbR:F1}dB)");
         }
-        else if (((_gainDbR + _gainDbL) % 2.0) < 0.5)
+        else if (Math.Abs((_gainDbL + _gainDbR) - before) > 0.01 &&
+                 (now - _lastBalanceLog).TotalSeconds > 15)
         {
+            _lastBalanceLog = now;
             _log.Info($"Auto-balance now +{_gainDbL:F1}dB L / +{_gainDbR:F1}dB R");
         }
     }
+
+    private static double MoveToward(double v, double target, double step) =>
+        v < target ? Math.Min(target, v + step) : Math.Max(target, v - step);
 
     // ---------- libvlc events / info ----------
 

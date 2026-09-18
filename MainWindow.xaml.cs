@@ -29,8 +29,6 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        Width = App.Store.Settings.Width;
-        Height = App.Store.Settings.Height;
 
         foreach (var u in App.Store.Streams.Urls)
             _streams.Add(u);
@@ -39,20 +37,30 @@ public partial class MainWindow : Window
 
         try
         {
+            using var ico = System.Drawing.Icon.ExtractAssociatedIcon(Environment.ProcessPath!);
+            if (ico != null)
+            {
+                var src = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(
+                    ico.Handle, System.Windows.Int32Rect.Empty,
+                    System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
+                src.Freeze();
+                Icon = src;
+            }
+        }
+        catch (Exception ex) { App.Log.Warn("Window icon failed: " + ex.Message); }
+        try
+        {
             var logo = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logo.png");
             var uri = File.Exists(logo) ? new Uri(logo) : new Uri("pack://application:,,,/Logo.png");
-            var img = new BitmapImage(uri);
-            LogoImage.Source = img;
-            Icon = img;
+            LogoImage.Source = new BitmapImage(uri);
         }
-        catch { }
+        catch (Exception ex) { App.Log.Warn("About logo failed: " + ex.Message); }
 
         RefreshDevices();
         SetDeviceSelection(App.Store.Settings.OutputDeviceId);
 
-        FastRadio.IsChecked = App.Store.Settings.FastMode;
-        StableRadio.IsChecked = !App.Store.Settings.FastMode;
         RateSlider.Value = App.Store.Settings.SampleRate switch { 44100 => 0, 96000 => 2, _ => 1 };
+        ModeToggle.IsChecked = !App.Store.Settings.FastMode;
         BalanceToggle.IsChecked = App.Store.Settings.AutoBalance;
         TrayToggle.IsChecked = App.Store.Settings.TrayOnClose;
         BootToggle.IsChecked = App.Store.Settings.StartOnBoot;
@@ -65,7 +73,7 @@ public partial class MainWindow : Window
 
         App.Engine.StateChanged += () => Dispatcher.BeginInvoke(RefreshState);
         App.Engine.LevelsChanged += () => { };
-        _meterTimer.Interval = TimeSpan.FromMilliseconds(66);
+        _meterTimer.Interval = TimeSpan.FromMilliseconds(25);
         _meterTimer.Tick += (_, _) => RefreshMeters();
         _meterTimer.Start();
 
@@ -179,17 +187,14 @@ public partial class MainWindow : Window
         _devs = StreamEngine.ListDevices();
         var names = _devs.Select(d => d.Name + (d.Default ? " (default)" : "")).ToList();
         if (names.Count == 0) names.Add("No output found — plug in a device");
-        DeviceCombo.ItemsSource = names;
-        SetDeviceCombo.ItemsSource = new List<string>(names);
+        SetDeviceCombo.ItemsSource = names;
         if (_devs.Count == 0) App.Log.Warn("No audio output devices found");
     }
 
     private void SetDeviceSelection(string? id)
     {
-        var i = Math.Max(0, _devs.FindIndex(d => d.Id == id));
-        if (_devs.Count == 0) { DeviceCombo.SelectedIndex = 0; SetDeviceCombo.SelectedIndex = 0; return; }
-        DeviceCombo.SelectedIndex = i;
-        SetDeviceCombo.SelectedIndex = i;
+        if (_devs.Count == 0) { SetDeviceCombo.SelectedIndex = 0; return; }
+        SetDeviceCombo.SelectedIndex = Math.Max(0, _devs.FindIndex(d => d.Id == id));
     }
 
     private void DeviceCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -200,17 +205,15 @@ public partial class MainWindow : Window
         var id = _devs[box.SelectedIndex].Id;
         App.Store.Settings.OutputDeviceId = id;
         App.Store.SaveSettings();
-        var other = box == DeviceCombo ? SetDeviceCombo : DeviceCombo;
-        other.SelectedIndex = box.SelectedIndex;
         App.Log.Info("Output: " + _devs[box.SelectedIndex].Name + " (applies on next play)");
     }
 
-    private void ModeRadio_Checked(object sender, RoutedEventArgs e)
+    private void ModeToggle_Changed(object sender, RoutedEventArgs e)
     {
         if (_loading) return;
-        App.Store.Settings.FastMode = FastRadio.IsChecked == true;
+        App.Store.Settings.FastMode = ModeToggle.IsChecked != true;
         App.Store.SaveSettings();
-        App.Log.Info("Mode: " + (App.Store.Settings.FastMode ? "Fast 300ms" : "Stable 1000ms") + " (applies on next play)");
+        App.Log.Info("Mode: " + (App.Store.Settings.FastMode ? "Fast start 300ms" : "Stable 1000ms") + " (applies on next play)");
     }
 
     private void RateSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -248,18 +251,6 @@ public partial class MainWindow : Window
         App.Store.SaveSettings();
         App.ApplyStartOnBoot();
         App.Log.Info("Start on boot " + (App.Store.Settings.StartOnBoot ? "ON" : "OFF"));
-    }
-
-    private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
-    {
-        try { Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory); } catch { }
-    }
-
-    private void ClearFavButton_Click(object sender, RoutedEventArgs e)
-    {
-        _streams.Clear();
-        App.Store.Streams.Urls.Clear();
-        App.Store.SaveStreams();
     }
 
     // ---------- logs ----------
@@ -324,9 +315,6 @@ public partial class MainWindow : Window
 
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
-        App.Store.Settings.Width = Width;
-        App.Store.Settings.Height = Height;
-        App.Store.SaveSettings();
         if (App.Store.Settings.TrayOnClose)
         {
             e.Cancel = true;
