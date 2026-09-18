@@ -36,9 +36,8 @@ public sealed class StreamEngine : IDisposable
     private long _pcmTicks;
     private int _attempt;
 
-    // meters (linear 0..1 peak, written by audio thread, read by UI)
+    // meters (linear 0..1 block peak, written by audio thread, consumed by UI)
     private volatile float _peakL, _peakR;
-    private float _showL, _showR;
 
     // auto-balance: slow gain trim on the weaker channel
     private double _gainDbL, _gainDbR;      // applied correction, clamped ±6
@@ -54,14 +53,11 @@ public sealed class StreamEngine : IDisposable
     private bool _autoBalance = true;
 
     public event Action? StateChanged;
-    public event Action? LevelsChanged;
 
     public EngineState State { get; private set; } = EngineState.Stopped;
     public string StatusText { get; private set; } = "Ready";
     public string DetailText { get; private set; } = "";
     public int Attempt => _attempt;
-    public float LevelL => _showL;
-    public float LevelR => _showR;
     public double BalanceDbL => _gainDbL;
     public double BalanceDbR => _gainDbR;
 
@@ -146,7 +142,7 @@ public sealed class StreamEngine : IDisposable
         CleanupAudio();
         try { _player?.Dispose(); } catch { }
         _player = null;
-        if (user) { _showL = _showR = 0; LevelsChanged?.Invoke(); }
+        if (user) { _peakL = _peakR = 0; }
     }
 
     private void CleanupAudio()
@@ -322,11 +318,15 @@ public sealed class StreamEngine : IDisposable
             if (aR > peakR) peakR = aR;
         }
         _peakL = peakL; _peakR = peakR;
-        // fast attack, smooth release toward the latest block peak
-        _showL = Math.Max(_peakL, _showL * 0.90f);
-        _showR = Math.Max(_peakR, _showR * 0.90f);
-        LevelsChanged?.Invoke();
         UpdateBalance();
+    }
+
+    /// <summary>UI thread: grab latest block peaks (time-based smoothing happens caller-side).</summary>
+    public (float L, float R) ConsumePeaks()
+    {
+        var l = _peakL; var r = _peakR;
+        _peakL = 0; _peakR = 0;
+        return (l, r);
     }
 
     private void UpdateBalance()

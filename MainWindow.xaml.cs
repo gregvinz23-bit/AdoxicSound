@@ -25,6 +25,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _meterTimer = new();
     private string _logFilter = "All";
     private bool _loading = true;
+    private float _dispL, _dispR;
 
     public MainWindow()
     {
@@ -72,7 +73,6 @@ public partial class MainWindow : Window
         }
 
         App.Engine.StateChanged += () => Dispatcher.BeginInvoke(RefreshState);
-        App.Engine.LevelsChanged += () => { };
         _meterTimer.Interval = TimeSpan.FromMilliseconds(25);
         _meterTimer.Tick += (_, _) => RefreshMeters();
         _meterTimer.Start();
@@ -114,13 +114,16 @@ public partial class MainWindow : Window
 
     private void RefreshMeters()
     {
-        var e = App.Engine;
-        MeterL.Value = Math.Clamp(e.LevelL * 100, 0, 100);
-        MeterR.Value = Math.Clamp(e.LevelR * 100, 0, 100);
-        MeterL.Foreground = BrushFor(e.LevelL);
-        MeterR.Foreground = BrushFor(e.LevelR);
-        DbL.Text = DbText(e.LevelL);
-        DbR.Text = DbText(e.LevelR);
+        var (pl, pr) = App.Engine.ConsumePeaks();
+        // time-based ballistics: instant attack, ~0.8s smooth release — same on any PC
+        _dispL = Math.Max(pl, _dispL * 0.94f);
+        _dispR = Math.Max(pr, _dispR * 0.94f);
+        MeterL.Value = Math.Clamp(_dispL * 100, 0, 100);
+        MeterR.Value = Math.Clamp(_dispR * 100, 0, 100);
+        MeterL.Foreground = BrushFor(_dispL);
+        MeterR.Foreground = BrushFor(_dispR);
+        DbL.Text = DbText(_dispL);
+        DbR.Text = DbText(_dispR);
     }
 
     private static Brush BrushFor(float l) =>

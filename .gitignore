@@ -434,3 +434,4 @@ FodyWeavers.xsd
 settings.json
 streams.json
 /logs/
+/fresh-test/
