@@ -67,8 +67,7 @@ public partial class MainWindow : Window
         TrayToggle.IsChecked = App.Store.Settings.TrayOnClose;
         BootToggle.IsChecked = App.Store.Settings.StartOnBoot;
         AlarmToggle.IsChecked = App.Store.Settings.AlarmEnabled;
-        SilenceSlider.Value = App.Store.Settings.SilenceSeconds;
-        SilenceLabel.Text = $"{App.Store.Settings.SilenceSeconds} s";
+        SilenceCombo.SelectedIndex = ClosestSilence(App.Store.Settings.SilenceSeconds);
 
         if (!string.IsNullOrEmpty(App.Store.Settings.LastUrl))
         {
@@ -271,13 +270,22 @@ public partial class MainWindow : Window
         App.Log.Info("Alarms " + (App.Store.Settings.AlarmEnabled ? "ON" : "OFF"));
     }
 
-    private void SilenceSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private static readonly int[] SilenceOptions = { 10, 15, 30, 60, 120, 300 };
+
+    private static int ClosestSilence(int s)
     {
-        var s = Math.Clamp((int)SilenceSlider.Value, 10, 300);
-        if (SilenceLabel != null) SilenceLabel.Text = $"{s} s";
-        if (_loading) return;
-        App.Store.Settings.SilenceSeconds = s;
+        var best = 0;
+        for (var i = 1; i < SilenceOptions.Length; i++)
+            if (Math.Abs(SilenceOptions[i] - s) < Math.Abs(SilenceOptions[best] - s)) best = i;
+        return best;
+    }
+
+    private void SilenceCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || SilenceCombo.SelectedIndex < 0) return;
+        App.Store.Settings.SilenceSeconds = SilenceOptions[SilenceCombo.SelectedIndex];
         App.Store.SaveSettings();
+        App.Log.Info($"Silence alarm after {App.Store.Settings.SilenceSeconds}s");
     }
 
     private void RateCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)

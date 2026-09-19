@@ -208,12 +208,20 @@
                     </ComboBox>
                     <CheckBox x:Name="ModeToggle" Content="Stable buffering (off = fast start)" Style="{StaticResource Toggle}"
                               Margin="0,6" Checked="ModeToggle_Changed" Unchecked="ModeToggle_Changed"/>
-                    <CheckBox x:Name="AlarmToggle" Content="Alarm on silence / drop" Style="{StaticResource Toggle}"
-                              Margin="0,6" Checked="AlarmToggle_Changed" Unchecked="AlarmToggle_Changed"/>
-                    <TextBlock Text="Silence alarm after" FontWeight="Bold" Margin="0,6,0,0"/>
-                    <Slider x:Name="SilenceSlider" Minimum="10" Maximum="300" Value="30" TickFrequency="10"
-                            IsSnapToTickEnabled="True" Margin="0,4" ValueChanged="SilenceSlider_Changed"/>
-                    <TextBlock x:Name="SilenceLabel" Text="30 s" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,6">
+                        <CheckBox x:Name="AlarmToggle" Content="Alarm on silence / drop" Style="{StaticResource Toggle}"
+                                  VerticalAlignment="Center" Checked="AlarmToggle_Changed" Unchecked="AlarmToggle_Changed"/>
+                        <TextBlock Text="after" VerticalAlignment="Center" Margin="12,0,6,0"/>
+                        <ComboBox x:Name="SilenceCombo" Width="80" VerticalAlignment="Center"
+                                  SelectionChanged="SilenceCombo_SelectionChanged">
+                            <ComboBoxItem Content="10 s"/>
+                            <ComboBoxItem Content="15 s"/>
+                            <ComboBoxItem Content="30 s"/>
+                            <ComboBoxItem Content="60 s"/>
+                            <ComboBoxItem Content="120 s"/>
+                            <ComboBoxItem Content="300 s"/>
+                        </ComboBox>
+                    </StackPanel>
                     <CheckBox x:Name="BalanceToggle" Content="Auto balance" Style="{StaticResource Toggle}"
                               Margin="0,6" Checked="BalanceToggle_Changed" Unchecked="BalanceToggle_Changed"/>
                     <CheckBox x:Name="TrayToggle" Content="Minimize to tray on close" Style="{StaticResource Toggle}"
