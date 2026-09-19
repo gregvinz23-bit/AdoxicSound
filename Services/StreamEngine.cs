@@ -330,6 +330,10 @@ public sealed class StreamEngine : IDisposable
             }
             int bytes = checked((int)count * 4); // S16N stereo
             if (bytes <= 0 || bytes > 1 << 20) return;
+            // keep the speaker buffer shallow (~500ms): if decode outruns playback
+            // (stall recovery, preroll), drop stale backlog so meters+sound stay live
+            var cap = _tap.WaveFormat.AverageBytesPerSecond / 2;
+            if (_tap.BufferedBytes > cap) _tap.ClearBuffer();
             // buffer underrun watch: speaker starved (glitch) -> count transitions only
             var lowMark = _tap.WaveFormat.AverageBytesPerSecond / 5;
             if (_tap.BufferedBytes < lowMark)
