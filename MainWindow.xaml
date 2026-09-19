@@ -201,9 +201,11 @@
                     <ComboBox x:Name="SetDeviceCombo" Margin="0,4,0,12"
                               SelectionChanged="DeviceCombo_SelectionChanged"/>
                     <TextBlock Text="Sample rate" FontWeight="Bold"/>
-                    <Slider x:Name="RateSlider" Minimum="0" Maximum="2" Value="1" TickFrequency="1"
-                            IsSnapToTickEnabled="True" Margin="0,4" ValueChanged="RateSlider_Changed"/>
-                    <TextBlock x:Name="RateLabel" Text="48000 Hz" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                    <ComboBox x:Name="RateCombo" Margin="0,4,0,12" SelectionChanged="RateCombo_SelectionChanged">
+                        <ComboBoxItem Content="44100 Hz"/>
+                        <ComboBoxItem Content="48000 Hz"/>
+                        <ComboBoxItem Content="96000 Hz"/>
+                    </ComboBox>
                     <CheckBox x:Name="ModeToggle" Content="Stable buffering (off = fast start)" Style="{StaticResource Toggle}"
                               Margin="0,6" Checked="ModeToggle_Changed" Unchecked="ModeToggle_Changed"/>
                     <CheckBox x:Name="AlarmToggle" Content="Alarm on silence / drop" Style="{StaticResource Toggle}"

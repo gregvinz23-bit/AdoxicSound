@@ -61,7 +61,7 @@ public partial class MainWindow : Window
         RefreshDevices();
         SetDeviceSelection(App.Store.Settings.OutputDeviceId);
 
-        RateSlider.Value = App.Store.Settings.SampleRate switch { 44100 => 0, 96000 => 2, _ => 1 };
+        RateCombo.SelectedIndex = App.Store.Settings.SampleRate switch { 44100 => 0, 96000 => 2, _ => 1 };
         ModeToggle.IsChecked = !App.Store.Settings.FastMode;
         BalanceToggle.IsChecked = App.Store.Settings.AutoBalance;
         TrayToggle.IsChecked = App.Store.Settings.TrayOnClose;
@@ -280,11 +280,10 @@ public partial class MainWindow : Window
         App.Store.SaveSettings();
     }
 
-    private void RateSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    private void RateCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        var rate = (int)RateSlider.Value switch { 0 => 44100, 2 => 96000, _ => 48000 };
-        if (RateLabel != null) RateLabel.Text = $"{rate} Hz";
-        if (_loading) return;
+        if (_loading || RateCombo.SelectedIndex < 0) return;
+        var rate = RateCombo.SelectedIndex switch { 0 => 44100, 2 => 96000, _ => 48000 };
         App.Store.Settings.SampleRate = rate;
         App.Store.SaveSettings();
         App.Log.Info($"Sample rate: {rate} Hz (applies on next play)");
