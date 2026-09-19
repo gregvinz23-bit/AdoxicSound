@@ -1,7 +1,7 @@
 ﻿<Window x:Class="AoIP_RX.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="AoIP RX" Height="470" Width="480" ResizeMode="NoResize"
+        Title="AoIP RX" Height="492" Width="480" ResizeMode="NoResize"
         Background="#F2F2F2" Foreground="#111111" FontFamily="Segoe UI">
     <Window.Resources>
         <SolidColorBrush x:Key="BgWindow" Color="#F2F2F2"/>
@@ -162,8 +162,9 @@
                         <ProgressBar x:Name="MeterR" Grid.Row="1" Grid.Column="1" Style="{StaticResource Meter}" Margin="4,2"/>
                         <TextBlock x:Name="DbR" Grid.Row="1" Grid.Column="2" Text="-∞ dB" FontFamily="Consolas"/>
                     </Grid>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2">
-                        <TextBlock x:Name="StatsText" Text="Up --:--:-- · Drops 0" Foreground="{DynamicResource FgDim}" FontSize="11" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="StatsText" Text="Up --:--:-- · Drops 0 · Glitches 0 · Alarms 0" Foreground="{DynamicResource FgDim}" FontSize="11" HorizontalAlignment="Center" Margin="0,2"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,1">
+                        <TextBlock x:Name="LifeText" Text="" Foreground="{DynamicResource FgDim}" FontSize="11" VerticalAlignment="Center"/>
                         <Button x:Name="StatsReset" Content="Reset" Click="StatsReset_Click" FontSize="10" Padding="6,1" Margin="6,0,0,0"/>
                     </StackPanel>
                 </StackPanel>

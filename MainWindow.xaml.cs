@@ -222,7 +222,7 @@ public partial class MainWindow : Window
     private void RefreshStats()
     {
         StatsText.Text = App.Engine.StatsLine(out var life);
-        if (!string.IsNullOrEmpty(life)) StatsText.Text += "  |  " + life;
+        LifeText.Text = life;
         if (App.Engine.DownSince is DateTime since)
             StatsText.Text += $"  |  DOWN {DateTime.UtcNow - since:hh\\:mm\\:ss}";
     }
