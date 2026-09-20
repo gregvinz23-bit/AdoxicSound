@@ -1,4 +1,4 @@
-﻿<Window x:Class="AoIP_RX.MainWindow"
+<Window x:Class="AdoxicSound.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Adoxic Sound" Height="500" Width="450" ResizeMode="NoResize"

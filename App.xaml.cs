@@ -1,11 +1,11 @@
-﻿using System.Drawing;
+using System.Drawing;
 using System.IO;
 using System.Windows;
-using AoIP_RX.Services;
+using AdoxicSound.Services;
 using Microsoft.Win32;
 using WinForms = System.Windows.Forms;
 
-namespace AoIP_RX;
+namespace AdoxicSound;
 
 /// <summary>
 /// Interaction logic for App.xaml. Owns portable store, log, engine, tray icon.

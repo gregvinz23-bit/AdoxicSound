@@ -1,7 +1,7 @@
 using System.IO;
 using System.Text.Json;
 
-namespace AoIP_RX.Services;
+namespace AdoxicSound.Services;
 
 public sealed class Settings
 {

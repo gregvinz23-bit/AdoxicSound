@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -8,13 +8,13 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using AoIP_RX.Services;
+using AdoxicSound.Services;
 using Application = System.Windows.Application;
 using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
 
-namespace AoIP_RX;
+namespace AdoxicSound;
 
 /// <summary>Interaction logic for MainWindow.xaml</summary>
 public partial class MainWindow : Window
@@ -284,7 +284,7 @@ public partial class MainWindow : Window
             http.DefaultRequestHeaders.UserAgent.ParseAdd("AdoxicSound/" + current);
             http.Timeout = TimeSpan.FromSeconds(10);
             var json = await http.GetStringAsync(
-                "https://api.github.com/repos/gregvinz23-bit/AoIP-RX/releases/latest");
+                "https://api.github.com/repos/gregvinz23-bit/AdoxicSound/releases/latest");
             var tag = JsonDocument.Parse(json).RootElement.GetProperty("tag_name").GetString() ?? "";
             var ver = tag.TrimStart('v', 'V');
             if (!Version.TryParse(ver, out var latest) || !Version.TryParse(current, out var mine))
@@ -296,7 +296,7 @@ public partial class MainWindow : Window
                 App.Log.Info($"Update available: v{ver}");
                 try
                 {
-                    Process.Start(new ProcessStartInfo("https://github.com/gregvinz23-bit/AoIP-RX/releases") { UseShellExecute = true });
+                    Process.Start(new ProcessStartInfo("https://github.com/gregvinz23-bit/AdoxicSound/releases") { UseShellExecute = true });
                 }
                 catch { }
             }

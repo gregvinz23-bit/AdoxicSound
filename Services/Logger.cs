@@ -3,7 +3,7 @@ using System.IO;
 using System.Text;
 using Application = System.Windows.Application;
 
-namespace AoIP_RX.Services;
+namespace AdoxicSound.Services;
 
 /// <summary>Thread-safe live log: 500-line ring for UI + daily file in logs/. Portable.</summary>
 public sealed class Logger

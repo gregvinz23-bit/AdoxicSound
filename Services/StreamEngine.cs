@@ -4,7 +4,7 @@ using LibVLCSharp.Shared;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
 
-namespace AoIP_RX.Services;
+namespace AdoxicSound.Services;
 
 public enum EngineState { Stopped, Connecting, Buffering, Playing, Reconnecting }
 

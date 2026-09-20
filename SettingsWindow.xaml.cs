@@ -1,10 +1,10 @@
 using System.Windows;
 using System.Windows.Controls;
-using AoIP_RX.Services;
+using AdoxicSound.Services;
 using Application = System.Windows.Application;
 using ComboBox = System.Windows.Controls.ComboBox;
 
-namespace AoIP_RX;
+namespace AdoxicSound;
 
 public partial class SettingsWindow : Window
 {

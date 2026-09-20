@@ -12,7 +12,7 @@ Developed by Greg Vincent. © 2026 Mantraix Software. All rights reserved.
 - Sample rate selection (44100/48000/96000 Hz), tray mode, start-on-boot, update checker
 
 ## Download & run (portable, no install)
-1. Go to [Releases](https://github.com/gregvinz23-bit/AoIP-RX/releases), download `AoIP-RX-v1.0-portable.zip`
+1. Go to [Releases](https://github.com/gregvinz23-bit/AdoxicSound/releases), download `AdoxicSound-v1.4-portable.zip`
 2. Extract anywhere (even USB) and run `AoIP-RX.exe`
 3. Paste a stream URL, press STREAM
 

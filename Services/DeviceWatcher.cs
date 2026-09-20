@@ -1,7 +1,7 @@
 using NAudio.CoreAudioApi;
 using NAudio.CoreAudioApi.Interfaces;
 
-namespace AoIP_RX.Services;
+namespace AdoxicSound.Services;
 
 /// <summary>Live Windows audio-endpoint notifications (plug/unplug/disable/default).</summary>
 public sealed class DeviceWatcher : IMMNotificationClient, IDisposable

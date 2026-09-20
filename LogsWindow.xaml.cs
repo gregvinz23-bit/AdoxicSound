@@ -3,7 +3,7 @@ using System.Windows.Controls;
 using Application = System.Windows.Application;
 using ComboBox = System.Windows.Controls.ComboBox;
 
-namespace AoIP_RX;
+namespace AdoxicSound;
 
 public partial class LogsWindow : Window
 {
