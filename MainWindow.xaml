@@ -95,9 +95,9 @@
                     </Grid>
                     <Grid Margin="0,6">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="30"/><ColumnDefinition Width="*"/><ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="70"/><ColumnDefinition Width="*"/><ColumnDefinition Width="60"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="Mic" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Input level" HorizontalAlignment="Center" FontSize="11"/>
                         <ProgressBar x:Name="SendMeter" Grid.Column="1" Style="{StaticResource Meter}" Margin="4,2"/>
                         <TextBlock x:Name="SendDb" Grid.Column="2" Text="-∞ dB" FontFamily="Consolas"/>
                     </Grid>
