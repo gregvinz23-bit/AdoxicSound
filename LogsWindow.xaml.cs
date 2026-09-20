@@ -49,7 +49,7 @@ public partial class LogsWindow : Window
         var lines = (items?.Cast<object>().Select(o => o?.ToString() ?? "") ?? Enumerable.Empty<string>()).ToList();
         var head = new List<string>
         {
-            $"AoIP RX log export {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
+            $"Adoxic Sound log export {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
             $"Stream: {App.Engine.CurrentUrl}",
             $"Session: {App.Engine.StatsLine(out var life)}",
         };

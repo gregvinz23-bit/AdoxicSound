@@ -18,7 +18,7 @@ public sealed class Logger
     {
         var dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
         Directory.CreateDirectory(dir);
-        _filePath = Path.Combine(dir, $"AoIP-RX-{DateTime.Now:yyyyMMdd}.txt");
+        _filePath = Path.Combine(dir, $"AdoxicSound-{DateTime.Now:yyyyMMdd}.txt");
     }
 
     public void Log(string level, string message)
@@ -46,7 +46,7 @@ public sealed class Logger
     public string ExportView(IEnumerable<string> visibleLines)
     {
         var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-            $"AoIP-RX-log-{DateTime.Now:yyyyMMdd-HHmm}.txt");
+            $"AdoxicSound-log-{DateTime.Now:yyyyMMdd-HHmm}.txt");
         File.WriteAllLines(path, visibleLines, Encoding.UTF8);
         return path;
     }

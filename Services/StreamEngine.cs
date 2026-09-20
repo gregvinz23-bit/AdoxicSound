@@ -503,7 +503,7 @@ public sealed class StreamEngine : IDisposable
         _lastDropAlarm = DateTime.UtcNow;
         _alarmsToday++;
         _log.Error($"Stream lost ({reason}) — retrying…");
-        app2.NotifyBalloon("AoIP RX — stream lost", $"{ShortUrl()} ({reason}) — retrying…");
+        app2.NotifyBalloon("Adoxic Sound — stream lost", $"{ShortUrl()} ({reason}) — retrying…");
     }
 
     private void NoteRecovered()
@@ -525,7 +525,7 @@ public sealed class StreamEngine : IDisposable
         _lastSilenceAlarm = DateTime.UtcNow;
         _alarmsToday++;
         _log.Error($"Silence {(int)quietFor}s on {ShortUrl()}");
-        app.NotifyBalloon("AoIP RX — silence", $"No audio for {(int)quietFor}s on {ShortUrl()}");
+        app.NotifyBalloon("Adoxic Sound — silence", $"No audio for {(int)quietFor}s on {ShortUrl()}");
     }
 
     private string ShortUrl()

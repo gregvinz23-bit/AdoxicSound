@@ -74,7 +74,7 @@ public partial class MainWindow : Window
 
         Closing += MainWindow_Closing;
         Closed += (_, _) => { _meterTimer.Stop(); _slowTimer.Stop(); };
-        VersionText.Text = "AoIP RX v" + CurrentVersion;
+        VersionText.Text = "Adoxic Sound v" + CurrentVersion;
         RefreshState();
         App.Log.Info("UI ready");
         if (!string.IsNullOrEmpty(App.PendingUrl))
@@ -281,7 +281,7 @@ public partial class MainWindow : Window
         try
         {
             using var http = new HttpClient();
-            http.DefaultRequestHeaders.UserAgent.ParseAdd("AoIP-RX/" + current);
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("AdoxicSound/" + current);
             http.Timeout = TimeSpan.FromSeconds(10);
             var json = await http.GetStringAsync(
                 "https://api.github.com/repos/gregvinz23-bit/AoIP-RX/releases/latest");

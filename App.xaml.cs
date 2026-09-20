@@ -35,7 +35,7 @@ public partial class App : System.Windows.Application
         try { Watcher.Start(); } catch (Exception ex) { Log.Warn("Hot-plug monitor off: " + ex.Message); }
         PendingUrl = e.Args.FirstOrDefault(a => a.Contains("://")) ?? "";
         var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?";
-        Log.Info($"AoIP RX v{v} started");
+        Log.Info($"Adoxic Sound v{v} started");
     }
 
     public void SetupTray()
@@ -63,7 +63,7 @@ public partial class App : System.Windows.Application
         catch { }
         _tray = new WinForms.NotifyIcon
         {
-            Text = "AoIP RX",
+            Text = "Adoxic Sound",
             Icon = TrayIcon ?? SystemIcons.Application,
             Visible = true
         };
@@ -97,9 +97,15 @@ public partial class App : System.Windows.Application
                 @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", writable: true);
             if (key == null) return;
             if (Store.Settings.StartOnBoot)
-                key.SetValue("AoIP-RX", $"\"{Environment.ProcessPath}\"");
-            else if (key.GetValue("AoIP-RX") != null)
-                key.DeleteValue("AoIP-RX");
+            {
+                key.SetValue("Adoxic Sound", $"\"{Environment.ProcessPath}\"");
+                if (key.GetValue("AoIP-RX") != null) key.DeleteValue("AoIP-RX"); // legacy name
+            }
+            else
+            {
+                if (key.GetValue("Adoxic Sound") != null) key.DeleteValue("Adoxic Sound");
+                if (key.GetValue("AoIP-RX") != null) key.DeleteValue("AoIP-RX");
+            }
         }
         catch { }
     }
