@@ -34,6 +34,12 @@ public sealed class StreamsFile
     public List<string> Urls { get; set; } = new();
 }
 
+public sealed class ServersFile
+{
+    public List<SendPreset> Presets { get; set; } = new();
+    public string? LastPreset { get; set; }
+}
+
 /// <summary>Portable store: streams.json + settings.json next to the exe.</summary>
 public sealed class AppStore
 {
@@ -42,6 +48,7 @@ public sealed class AppStore
 
     public Settings Settings { get; private set; } = new();
     public StreamsFile Streams { get; private set; } = new();
+    public ServersFile Servers { get; private set; } = new();
 
     public AppStore()
     {
@@ -65,9 +72,23 @@ public sealed class AppStore
                 Streams = JsonSerializer.Deserialize<StreamsFile>(File.ReadAllText(p)) ?? new();
         }
         catch { }
+        try
+        {
+            var p = Path.Combine(_base, "servers.json");
+            if (File.Exists(p))
+                Servers = JsonSerializer.Deserialize<ServersFile>(File.ReadAllText(p)) ?? new();
+        }
+        catch { }
+        Servers.Presets ??= new();
         if (Settings.SampleRate is not (44100 or 48000 or 96000)) Settings.SampleRate = 48000;
         if (Settings.SilenceSeconds < 10 || Settings.SilenceSeconds > 300) Settings.SilenceSeconds = 30;
         Settings.UrlStats ??= new();
+    }
+
+    public void SaveServers()
+    {
+        try { File.WriteAllText(Path.Combine(_base, "servers.json"), JsonSerializer.Serialize(Servers, Json)); }
+        catch { }
     }
 
     public void SaveSettings()

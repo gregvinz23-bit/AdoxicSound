@@ -56,6 +56,74 @@
 
             <!-- ============ SETTINGS (separate window) ============ -->
 
+            <!-- ============ SEND ============ -->
+            <TabItem Header="Send">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Background="{DynamicResource BgWindow}">
+                <StackPanel HorizontalAlignment="Stretch" Margin="16" Background="{DynamicResource BgWindow}">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4">
+                        <Ellipse x:Name="SendDot" Width="12" Height="12" Fill="Gray" Margin="0,0,8,0"/>
+                        <TextBlock x:Name="SendStatus" Text="Off air" FontWeight="Bold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock x:Name="SendDetail" Text="" HorizontalAlignment="Center"
+                               Foreground="{DynamicResource FgDim}" Margin="0,0,0,8"/>
+                    <Grid Margin="0,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="70"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="70"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="Preset" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="SendPresetBox" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3" Margin="0,2"
+                                  SelectionChanged="SendPresetBox_Changed"/>
+                        <TextBlock Text="Server" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="SendTypeBox" Grid.Row="1" Grid.Column="1" Margin="0,2" SelectionChanged="SendField_Changed">
+                            <ComboBoxItem Content="Icecast 2"/>
+                            <ComboBoxItem Content="Shoutcast v2"/>
+                            <ComboBoxItem Content="Shoutcast v1"/>
+                        </ComboBox>
+                        <TextBlock Text="Bitrate" Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        <ComboBox x:Name="SendRateBox" Grid.Row="1" Grid.Column="3" Margin="0,2" SelectionChanged="SendField_Changed">
+                            <ComboBoxItem Content="64 kbps"/><ComboBoxItem Content="96 kbps"/>
+                            <ComboBoxItem Content="128 kbps"/><ComboBoxItem Content="160 kbps"/>
+                            <ComboBoxItem Content="320 kbps"/>
+                        </ComboBox>
+                        <TextBlock Text="Host" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"/>
+                        <TextBox x:Name="SendHost" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" Margin="0,2" TextChanged="SendField_Changed"/>
+                        <TextBlock Text="Port" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"/>
+                        <TextBox x:Name="SendPort" Grid.Row="3" Grid.Column="1" Margin="0,2" TextChanged="SendField_Changed"/>
+                        <TextBlock Text="Mount" Grid.Row="3" Grid.Column="2" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        <TextBox x:Name="SendMount" Grid.Row="3" Grid.Column="3" Margin="0,2" TextChanged="SendField_Changed"/>
+                        <TextBlock Text="User" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center"/>
+                        <TextBox x:Name="SendUser" Grid.Row="4" Grid.Column="1" Margin="0,2" TextChanged="SendField_Changed"/>
+                        <TextBlock Text="Pass" Grid.Row="4" Grid.Column="2" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        <PasswordBox x:Name="SendPass" Grid.Row="4" Grid.Column="3" Margin="0,2" PasswordChanged="SendField_Changed"/>
+                    </Grid>
+                    <TextBlock Text="Input" FontWeight="Bold" Margin="0,6,0,0"/>
+                    <ComboBox x:Name="SendInputBox" Margin="0,2" SelectionChanged="SendField_Changed"/>
+                    <Grid Margin="0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="30"/><ColumnDefinition Width="*"/><ColumnDefinition Width="60"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Mic" HorizontalAlignment="Center"/>
+                        <ProgressBar x:Name="SendMeter" Grid.Column="1" Style="{StaticResource Meter}" Margin="4,2"/>
+                        <TextBlock x:Name="SendDb" Grid.Column="2" Text="-∞ dB" FontFamily="Consolas"/>
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button x:Name="SendPresetSave" Content="Save preset" Click="SendPresetSave_Click"/>
+                        <Button x:Name="SendPresetDel" Content="Delete" Click="SendPresetDel_Click"/>
+                    </StackPanel>
+                    <Button x:Name="GoLiveButton" Content="●  GO LIVE" FontSize="16" Padding="14,10"
+                            Background="#2AA9E0" Click="GoLiveButton_Click" Margin="0,8"/>
+                    <TextBlock x:Name="SendStats" Text="" HorizontalAlignment="Center"
+                               Foreground="{DynamicResource FgDim}" FontSize="11"/>
+                </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <!-- ============ ABOUT ============ -->
             <TabItem Header="About">
                 <StackPanel MaxWidth="640" HorizontalAlignment="Center" Margin="16"

@@ -24,6 +24,9 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _meterTimer = new();
     private readonly DispatcherTimer _slowTimer = new();
     private float _dispL, _dispR;
+    private float _sendDisp;
+    private bool _sendSilenceAlarmed;
+    private readonly ObservableCollection<string> _presetNames = new();
 
     public MainWindow()
     {
@@ -61,11 +64,13 @@ public partial class MainWindow : Window
         }
 
         App.Engine.StateChanged += () => Dispatcher.BeginInvoke(RefreshState);
+        App.Send.StateChanged += () => Dispatcher.BeginInvoke(RefreshSend);
+        InitSendTab();
         _meterTimer.Interval = TimeSpan.FromMilliseconds(25);
         _meterTimer.Tick += (_, _) => RefreshMeters();
         _meterTimer.Start();
         _slowTimer.Interval = TimeSpan.FromSeconds(1);
-        _slowTimer.Tick += (_, _) => { RefreshState(); RefreshStats(); };
+        _slowTimer.Tick += (_, _) => { RefreshState(); RefreshStats(); RefreshSend(); CheckSendSilence(); };
         _slowTimer.Start();
 
         App.Watcher.DeviceAdded += () => Dispatcher.BeginInvoke(() => App.Log.Info("Audio device added"));
@@ -118,6 +123,11 @@ public partial class MainWindow : Window
         MeterR.Foreground = BrushFor(_dispR);
         DbL.Text = DbText(_dispL);
         DbR.Text = DbText(_dispR);
+        var (mp, _) = App.Send.ConsumeMic();
+        _sendDisp = Math.Max(mp, _sendDisp * 0.94f);
+        SendMeter.Value = Math.Clamp(_sendDisp * 100, 0, 100);
+        SendMeter.Foreground = BrushFor(_sendDisp);
+        SendDb.Text = DbText(_sendDisp);
     }
 
     private static Brush BrushFor(float l) =>
@@ -267,6 +277,176 @@ public partial class MainWindow : Window
             App.Log.Info("Lifetime stats cleared for this stream");
             RefreshStats();
         }
+    }
+
+    // ---------- send tab ----------
+
+    private SendPreset _draft = new();
+    private bool _sendLoading = true;
+    private static readonly int[] SendRates = { 64, 96, 128, 160, 320 };
+    private List<(string Id, string Name)> _inputs = new();
+
+    private void InitSendTab()
+    {
+        _inputs = SendEngine.ListInputs();
+        SendInputBox.ItemsSource = _inputs.Select(d => d.Name).ToList();
+        if (_inputs.Count == 0) SendInputBox.ItemsSource = new List<string> { "No input found" };
+        RefreshPresetNames();
+        var last = App.Store.Servers.LastPreset;
+        var p = App.Store.Servers.Presets.FirstOrDefault(x => x.Name == last)
+                ?? App.Store.Servers.Presets.FirstOrDefault();
+        if (p == null)
+        {
+            p = new SendPreset { Name = "My station" };
+            App.Store.Servers.Presets.Add(p);
+            App.Store.SaveServers();
+            RefreshPresetNames();
+        }
+        LoadPreset(p);
+        _sendLoading = false;
+        RefreshSend();
+    }
+
+    private void RefreshPresetNames()
+    {
+        _presetNames.Clear();
+        foreach (var p in App.Store.Servers.Presets) _presetNames.Add(p.Name);
+        SendPresetBox.ItemsSource = _presetNames;
+    }
+
+    private SendPreset? SelectedPreset() =>
+        SendPresetBox.SelectedItem is string n
+            ? App.Store.Servers.Presets.FirstOrDefault(x => x.Name == n) : null;
+
+    private void LoadPreset(SendPreset p)
+    {
+        _draft = p;
+        _sendLoading = true;
+        SendTypeBox.SelectedIndex = (int)p.Type;
+        SendRateBox.SelectedIndex = Math.Max(0, Array.IndexOf(SendRates, p.Bitrate));
+        if (SendRateBox.SelectedIndex < 0) SendRateBox.SelectedIndex = 2;
+        SendHost.Text = p.Host;
+        SendPort.Text = p.Port.ToString();
+        SendMount.Text = p.Mount;
+        SendUser.Text = p.User;
+        SendPass.Password = DecodeB64(p.PassB64);
+        var ii = _inputs.FindIndex(d => d.Id == p.InputDeviceId);
+        SendInputBox.SelectedIndex = Math.Max(0, ii >= 0 ? ii : 0);
+        if (App.Store.Servers.Presets.Contains(p))
+            SendPresetBox.SelectedItem = p.Name;
+        App.Store.Servers.LastPreset = p.Name;
+        App.Store.SaveServers();
+        _sendLoading = false;
+    }
+
+    private static string DecodeB64(string b)
+    {
+        try { return System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(b)); }
+        catch { return b; }
+    }
+
+    private void SendPresetBox_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_sendLoading) return;
+        var p = SelectedPreset();
+        if (p != null) LoadPreset(p);
+    }
+
+    private void SendField_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_sendLoading) return;
+        var p = SelectedPreset() ?? _draft;
+        p.Type = (SendServerType)Math.Max(0, SendTypeBox.SelectedIndex);
+        p.Bitrate = SendRates[Math.Max(0, SendRateBox.SelectedIndex)];
+        p.Host = SendHost.Text.Trim();
+        if (int.TryParse(SendPort.Text.Trim(), out var port)) p.Port = Math.Clamp(port, 1, 65535);
+        p.Mount = SendMount.Text.Trim();
+        p.User = SendUser.Text.Trim();
+        p.PassB64 = SendEngine.Encode(SendPass.Password);
+        if (SendInputBox.SelectedIndex >= 0 && SendInputBox.SelectedIndex < _inputs.Count)
+            p.InputDeviceId = _inputs[SendInputBox.SelectedIndex].Id;
+        App.Store.SaveServers();
+    }
+
+    private void SendPresetSave_Click(object sender, RoutedEventArgs e)
+    {
+        var p = SelectedPreset();
+        if (p == null)
+        {
+            p = new SendPreset { Name = "Station " + (App.Store.Servers.Presets.Count + 1) };
+            App.Store.Servers.Presets.Add(p);
+        }
+        SendField_Changed(sender, e);
+        RefreshPresetNames();
+        SendPresetBox.SelectedItem = p.Name;
+        App.Store.Servers.LastPreset = p.Name;
+        App.Store.SaveServers();
+        App.Log.Info("Server preset saved: " + p.Name);
+    }
+
+    private void SendPresetDel_Click(object sender, RoutedEventArgs e)
+    {
+        var p = SelectedPreset();
+        if (p == null) return;
+        var wasLive = App.Send.State != SendState.Stopped;
+        if (wasLive) App.Send.Stop();
+        App.Store.Servers.Presets.Remove(p);
+        App.Store.SaveServers();
+        RefreshPresetNames();
+        var next = App.Store.Servers.Presets.FirstOrDefault();
+        if (next != null) LoadPreset(next);
+        App.Log.Info("Server preset deleted: " + p.Name);
+    }
+
+    private void GoLiveButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (App.Send.State != SendState.Stopped) { App.Send.Stop(); return; }
+        SendField_Changed(sender, e);
+        var p = SelectedPreset() ?? _draft;
+        if (string.IsNullOrWhiteSpace(p.Host)) { App.Log.Error("Enter the server host first"); return; }
+        if (string.IsNullOrEmpty(DecodeB64(p.PassB64))) { App.Log.Error("Enter the server password first"); return; }
+        p.InputDeviceId = SendInputBox.SelectedIndex >= 0 && SendInputBox.SelectedIndex < _inputs.Count
+            ? _inputs[SendInputBox.SelectedIndex].Id : null;
+        App.Send.Version = CurrentVersion;
+        App.Send.Start(ClonePreset(p));
+    }
+
+    private static SendPreset ClonePreset(SendPreset p) => new()
+    {
+        Name = p.Name, Type = p.Type, Host = p.Host, Port = p.Port, Mount = p.Mount,
+        User = p.User, PassB64 = p.PassB64, Bitrate = p.Bitrate, InputDeviceId = p.InputDeviceId
+    };
+
+    private void RefreshSend()
+    {
+        var s = App.Send;
+        SendStatus.Text = s.StatusText + (s.Attempt > 1 && s.State != SendState.Live ? $" (try {s.Attempt})" : "");
+        SendDetail.Text = s.State == SendState.Live
+            ? $"{s.Config.Type} {s.Config.Host}:{s.Config.Port}{s.Config.Mount} · {s.Config.Bitrate}k"
+            : "";
+        SendDot.Fill = s.State switch
+        {
+            SendState.Live => Brushes.LimeGreen,
+            SendState.Connecting or SendState.Reconnecting => Brushes.Gold,
+            _ => Brushes.Gray
+        };
+        GoLiveButton.Content = s.State == SendState.Stopped ? "●  GO LIVE" : "■  STOP";
+        GoLiveButton.Background = s.State == SendState.Stopped
+            ? (Brush)new SolidColorBrush(Color.FromRgb(0x2A, 0xA9, 0xE0)) : Brushes.Firebrick;
+        var up = s.LiveSince is DateTime t ? DateTime.UtcNow - t : TimeSpan.Zero;
+        SendStats.Text = s.State == SendState.Stopped && s.BytesSent == 0 ? ""
+            : $"Up {up:hh\\:mm\\:ss} · {s.BytesSent / 1024}KB sent · Drops {s.Drops}";
+    }
+
+    private void CheckSendSilence()
+    {
+        if (App.Send.State != SendState.Live || !App.Store.Settings.AlarmEnabled) return;
+        var quietFor = (DateTime.UtcNow - App.Send.LastAudibleUtc).TotalSeconds;
+        if (quietFor < App.Store.Settings.SilenceSeconds) { _sendSilenceAlarmed = false; return; }
+        if (_sendSilenceAlarmed) return;
+        _sendSilenceAlarmed = true;
+        App.Log.Error($"Mic silent {(int)quietFor}s — nothing going out");
+        App.NotifyBalloon("Adoxic Sound — mic silent", $"No input for {(int)quietFor}s");
     }
 
     // ---------- about / updates ----------
