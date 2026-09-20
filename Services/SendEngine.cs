@@ -143,7 +143,7 @@ public sealed class SendEngine : IDisposable
             var buf = Encoding.ASCII.GetBytes(req);
             await stream.WriteAsync(buf, ct);
             var line = await ReadLine(stream, ct);
-            if (!line.Contains("200")) throw new Exception("server refused (" + line.Trim() + ")");
+            if (!line.Contains("200")) throw new Exception("server refused (" + line.Trim() + " " + await ReadBody(stream) + ")");
         }
         else
         {
@@ -156,7 +156,7 @@ public sealed class SendEngine : IDisposable
             await stream.WriteAsync(buf, ct);
             var line = await ReadLine(stream, ct);
             if (!line.StartsWith("OK", StringComparison.OrdinalIgnoreCase))
-                throw new Exception("server refused (" + line.Trim() + ")");
+                throw new Exception("server refused (" + line.Trim() + " " + await ReadBody(stream) + ")");
         }
 
         // capture -> resample 44100/16bit -> MP3 -> socket
@@ -285,6 +285,32 @@ public sealed class SendEngine : IDisposable
 
     public static string Encode(string plain) =>
         Convert.ToBase64String(Encoding.UTF8.GetBytes(plain ?? ""));
+
+    private static async Task<string> ReadBody(NetworkStream s)
+    {
+        try
+        {
+            var sb = new StringBuilder();
+            var buf = new byte[512];
+            s.ReadTimeout = 3000;
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (sb.Length < 300 && sw.Elapsed.TotalSeconds < 4)
+            {
+                int n;
+                try { n = await s.ReadAsync(buf, 0, buf.Length); }
+                catch { break; }
+                if (n <= 0) break;
+                sb.Append(Encoding.ASCII.GetString(buf, 0, n));
+                if (!s.DataAvailable) break;
+            }
+            var t = sb.ToString();
+            var bi = t.IndexOf("<?xml", StringComparison.Ordinal);
+            if (bi >= 0) t = t[bi..];
+            t = t.Replace("\r", " ").Replace("\n", " ").Trim();
+            return t.Length > 300 ? t[..300] : t;
+        }
+        catch { return ""; }
+    }
 
     private static async Task<string> ReadLine(NetworkStream s, CancellationToken ct)
     {
