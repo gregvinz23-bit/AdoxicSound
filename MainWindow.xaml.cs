@@ -74,7 +74,7 @@ public partial class MainWindow : Window
 
         App.Watcher.DeviceAdded += () => Dispatcher.BeginInvoke(() => App.Log.Info("Audio device added"));
         App.Watcher.DeviceRemoved += id => Dispatcher.BeginInvoke(() => OnDeviceLost(id));
-        App.Watcher.DevicesChanged += () => Dispatcher.BeginInvoke(() => _settingsWin?.RefreshDevices());
+        App.Watcher.DevicesChanged += () => Dispatcher.BeginInvoke(() => { _settingsWin?.RefreshDevices(); _settingsWin?.RefreshInputs(); });
 
         Closing += MainWindow_Closing;
         Closed += (_, _) => { _meterTimer.Stop(); _slowTimer.Stop(); };
@@ -281,8 +281,6 @@ public partial class MainWindow : Window
     // ---------- send tab (single server config, auto-saved) ----------
 
     private bool _sendLoading = true;
-    private static readonly int[] SendRates = { 64, 96, 128, 160, 320 };
-    private List<(string Id, string Name)> _inputs = new();
 
     private SendPreset SendCfg()
     {
@@ -299,21 +297,14 @@ public partial class MainWindow : Window
 
     private void InitSendTab()
     {
-        _inputs = SendEngine.ListInputs();
-        SendInputBox.ItemsSource = _inputs.Select(d => d.Name).ToList();
-        if (_inputs.Count == 0) SendInputBox.ItemsSource = new List<string> { "No input found" };
         var p = SendCfg();
         _sendLoading = true;
         SendTypeBox.SelectedIndex = (int)p.Type;
-        SendRateBox.SelectedIndex = Math.Max(0, Array.IndexOf(SendRates, p.Bitrate));
-        if (SendRateBox.SelectedIndex < 0) SendRateBox.SelectedIndex = 2;
         SendHost.Text = p.Host;
         SendPort.Text = p.Port.ToString();
         SendMount.Text = p.Mount;
         SendUser.Text = p.User;
         SendPass.Password = DecodeB64(p.PassB64);
-        var ii = _inputs.FindIndex(d => d.Id == p.InputDeviceId);
-        SendInputBox.SelectedIndex = Math.Max(0, ii >= 0 ? ii : 0);
         _sendLoading = false;
         RefreshSend();
     }
@@ -329,14 +320,11 @@ public partial class MainWindow : Window
         if (_sendLoading) return;
         var p = SendCfg();
         p.Type = (SendServerType)Math.Max(0, SendTypeBox.SelectedIndex);
-        p.Bitrate = SendRates[Math.Max(0, SendRateBox.SelectedIndex)];
         p.Host = SendHost.Text.Trim();
         if (int.TryParse(SendPort.Text.Trim(), out var port)) p.Port = Math.Clamp(port, 1, 65535);
         p.Mount = SendMount.Text.Trim();
         p.User = SendUser.Text.Trim();
         p.PassB64 = SendEngine.Encode(SendPass.Password);
-        if (SendInputBox.SelectedIndex >= 0 && SendInputBox.SelectedIndex < _inputs.Count)
-            p.InputDeviceId = _inputs[SendInputBox.SelectedIndex].Id;
         App.Store.SaveServers();
     }
 
@@ -347,8 +335,6 @@ public partial class MainWindow : Window
         var p = SendCfg();
         if (string.IsNullOrWhiteSpace(p.Host)) { App.Log.Error("Enter the server host first"); return; }
         if (string.IsNullOrEmpty(DecodeB64(p.PassB64))) { App.Log.Error("Enter the server password first"); return; }
-        p.InputDeviceId = SendInputBox.SelectedIndex >= 0 && SendInputBox.SelectedIndex < _inputs.Count
-            ? _inputs[SendInputBox.SelectedIndex].Id : null;
         App.Send.Version = CurrentVersion;
         App.Send.Start(ClonePreset(p));
     }

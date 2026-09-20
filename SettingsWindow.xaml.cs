@@ -12,7 +12,9 @@ public partial class SettingsWindow : Window
     private readonly MainWindow _main;
     private bool _loading = true;
     private List<(string Id, string Name, bool Default)> _devs = new();
+    private List<(string Id, string Name)> _inputs = new();
     private static readonly int[] SilenceOptions = { 10, 15, 30, 60, 120, 300 };
+    private static readonly int[] SendRates = { 64, 96, 128, 160, 320 };
 
     public SettingsWindow(MainWindow main)
     {
@@ -25,6 +27,11 @@ public partial class SettingsWindow : Window
         ModeToggle.IsChecked = !App.Store.Settings.FastMode;
         AlarmToggle.IsChecked = App.Store.Settings.AlarmEnabled;
         SilenceCombo.SelectedIndex = ClosestSilence(App.Store.Settings.SilenceSeconds);
+        _inputs = new List<(string Id, string Name)>();
+        RefreshInputs();
+        var sp = SendCfg();
+        SendRateBox.SelectedIndex = Math.Max(0, Array.IndexOf(SendRates, sp.Bitrate));
+        if (SendRateBox.SelectedIndex < 0) SendRateBox.SelectedIndex = 2;
         TrayToggle.IsChecked = App.Store.Settings.TrayOnClose;
         BootToggle.IsChecked = App.Store.Settings.StartOnBoot;
         App.Watcher.DevicesChanged += Watcher_Devices;
@@ -38,8 +45,19 @@ public partial class SettingsWindow : Window
         _loading = false;
     }
 
-    private void Watcher_Devices() => Dispatcher.BeginInvoke(() => RefreshDevices());
+    private void Watcher_Devices() => Dispatcher.BeginInvoke(() => { RefreshDevices(); RefreshInputs(); });
     private void Watcher_Removed(string id) => Dispatcher.BeginInvoke(() => _main.OnDeviceLost(id));
+
+    public void RefreshInputs()
+    {
+        var keep = SendCfg().InputDeviceId;
+        _inputs = SendEngine.ListInputs();
+        SendInputBox.ItemsSource = _inputs.Select(d => d.Name).ToList();
+        if (_inputs.Count == 0) SendInputBox.ItemsSource = new List<string> { "No input found" };
+        var ii = _inputs.FindIndex(d => d.Id == keep);
+        SendInputBox.SelectedIndex = Math.Max(0, ii);
+        if (_inputs.Count == 0) SendInputBox.SelectedIndex = 0;
+    }
 
     public void RefreshDevices()
     {
@@ -126,6 +144,35 @@ public partial class SettingsWindow : Window
         App.Store.SaveSettings();
         App.ApplyStartOnBoot();
         App.Log.Info("Start on boot " + (App.Store.Settings.StartOnBoot ? "ON" : "OFF"));
+    }
+
+    private SendPreset SendCfg()
+    {
+        var s = App.Store.Servers;
+        var p = s.Presets.FirstOrDefault();
+        if (p == null)
+        {
+            p = new SendPreset { Name = "Server" };
+            s.Presets.Add(p);
+            App.Store.SaveServers();
+        }
+        return p;
+    }
+
+    private void SendInput_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || SendInputBox.SelectedIndex < 0) return;
+        if (SendInputBox.SelectedIndex < _inputs.Count)
+            SendCfg().InputDeviceId = _inputs[SendInputBox.SelectedIndex].Id;
+        App.Store.SaveServers();
+    }
+
+    private void SendRate_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || SendRateBox.SelectedIndex < 0) return;
+        SendCfg().Bitrate = SendRates[SendRateBox.SelectedIndex];
+        App.Store.SaveServers();
+        App.Log.Info($"Send bitrate: {SendCfg().Bitrate} kbps (applies on next go-live)");
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();

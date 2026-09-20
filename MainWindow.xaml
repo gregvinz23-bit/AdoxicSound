@@ -77,16 +77,10 @@
                             <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
                         </Grid.RowDefinitions>
                         <TextBlock Text="Server" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
-                        <ComboBox x:Name="SendTypeBox" Grid.Row="0" Grid.Column="1" Margin="0,2" SelectionChanged="SendField_Changed">
+                        <ComboBox x:Name="SendTypeBox" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3" Margin="0,2" SelectionChanged="SendField_Changed">
                             <ComboBoxItem Content="Icecast 2"/>
                             <ComboBoxItem Content="Shoutcast v2"/>
                             <ComboBoxItem Content="Shoutcast v1"/>
-                        </ComboBox>
-                        <TextBlock Text="Bitrate" Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                        <ComboBox x:Name="SendRateBox" Grid.Row="0" Grid.Column="3" Margin="0,2" SelectionChanged="SendField_Changed">
-                            <ComboBoxItem Content="64 kbps"/><ComboBoxItem Content="96 kbps"/>
-                            <ComboBoxItem Content="128 kbps"/><ComboBoxItem Content="160 kbps"/>
-                            <ComboBoxItem Content="320 kbps"/>
                         </ComboBox>
                         <TextBlock Text="Host" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"/>
                         <TextBox x:Name="SendHost" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Margin="0,2" TextChanged="SendField_Changed"/>
@@ -99,8 +93,6 @@
                         <TextBlock Text="Pass" Grid.Row="3" Grid.Column="2" VerticalAlignment="Center" Margin="8,0,0,0"/>
                         <PasswordBox x:Name="SendPass" Grid.Row="3" Grid.Column="3" Margin="0,2" PasswordChanged="SendField_Changed"/>
                     </Grid>
-                    <TextBlock Text="Input" FontWeight="Bold" Margin="0,6,0,0"/>
-                    <ComboBox x:Name="SendInputBox" Margin="0,2" SelectionChanged="SendField_Changed"/>
                     <Grid Margin="0,6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="30"/><ColumnDefinition Width="*"/><ColumnDefinition Width="60"/>
