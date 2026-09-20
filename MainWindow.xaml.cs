@@ -65,6 +65,17 @@ public partial class MainWindow : Window
         App.Engine.StateChanged += () => Dispatcher.BeginInvoke(RefreshState);
         App.Send.StateChanged += () => Dispatcher.BeginInvoke(RefreshSend);
         InitSendTab();
+        if (App.Store.Settings.GoLiveOnBoot)
+        {
+            var sp = SendCfg();
+            if (!string.IsNullOrWhiteSpace(sp.Host) && !string.IsNullOrEmpty(DecodeB64(sp.PassB64)))
+            {
+                App.Send.Version = CurrentVersion;
+                App.Send.Start(ClonePreset(sp));
+                App.Log.Info("Auto go-live on startup");
+            }
+            else App.Log.Warn("Go-live on startup skipped: server not configured");
+        }
         _meterTimer.Interval = TimeSpan.FromMilliseconds(25);
         _meterTimer.Tick += (_, _) => RefreshMeters();
         _meterTimer.Start();

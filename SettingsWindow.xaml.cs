@@ -15,6 +15,8 @@ public partial class SettingsWindow : Window
     private List<(string Id, string Name)> _inputs = new();
     private static readonly int[] SilenceOptions = { 10, 15, 30, 60, 120, 300 };
     private static readonly int[] SendRates = { 64, 96, 128, 160, 320 };
+    private static readonly int[] SendCuts = { 0, 5, 15, 30, 60 };
+    private static readonly int[] SendRetries = { 4, 10, 30 };
 
     public SettingsWindow(MainWindow main)
     {
@@ -32,6 +34,10 @@ public partial class SettingsWindow : Window
         var sp = SendCfg();
         SendRateBox.SelectedIndex = Math.Max(0, Array.IndexOf(SendRates, sp.Bitrate));
         if (SendRateBox.SelectedIndex < 0) SendRateBox.SelectedIndex = 2;
+        SendChBox.SelectedIndex = sp.Channels switch { 1 => 1, 2 => 2, _ => 0 };
+        SendCutBox.SelectedIndex = Math.Max(0, Array.IndexOf(SendCuts, sp.CutoffMin));
+        SendRetryBox.SelectedIndex = Math.Max(0, Array.IndexOf(SendRetries, sp.ReconnectSec));
+        GoLiveBootToggle.IsChecked = App.Store.Settings.GoLiveOnBoot;
         TrayToggle.IsChecked = App.Store.Settings.TrayOnClose;
         BootToggle.IsChecked = App.Store.Settings.StartOnBoot;
         App.Watcher.DevicesChanged += Watcher_Devices;
@@ -173,6 +179,36 @@ public partial class SettingsWindow : Window
         SendCfg().Bitrate = SendRates[SendRateBox.SelectedIndex];
         App.Store.SaveServers();
         App.Log.Info($"Send bitrate: {SendCfg().Bitrate} kbps (applies on next go-live)");
+    }
+
+    private void SendCh_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || SendChBox.SelectedIndex < 0) return;
+        SendCfg().Channels = SendChBox.SelectedIndex;
+        App.Store.SaveServers();
+        App.Log.Info("Send channels: " + (SendChBox.SelectedIndex switch { 1 => "mono", 2 => "stereo", _ => "auto" }));
+    }
+
+    private void SendCut_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || SendCutBox.SelectedIndex < 0) return;
+        SendCfg().CutoffMin = SendCuts[SendCutBox.SelectedIndex];
+        App.Store.SaveServers();
+    }
+
+    private void SendRetry_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || SendRetryBox.SelectedIndex < 0) return;
+        SendCfg().ReconnectSec = SendRetries[SendRetryBox.SelectedIndex];
+        App.Store.SaveServers();
+    }
+
+    private void GoLiveBoot_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        App.Store.Settings.GoLiveOnBoot = GoLiveBootToggle.IsChecked == true;
+        App.Store.SaveSettings();
+        App.Log.Info("Go live on startup " + (App.Store.Settings.GoLiveOnBoot ? "ON" : "OFF"));
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();

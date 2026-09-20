@@ -21,6 +21,9 @@ public sealed class SendPreset
     public string PassB64 { get; set; } = ""; // lightly obfuscated, local file only
     public int Bitrate { get; set; } = 128;
     public string? InputDeviceId { get; set; }
+    public int Channels { get; set; } = 0; // 0 auto, 1 mono, 2 stereo
+    public int CutoffMin { get; set; } = 0; // 0 off; auto-stop after N silent minutes
+    public int ReconnectSec { get; set; } = 4;
 }
 
 /// <summary>Mic/line-in capture -> MP3 -> Icecast2 / Shoutcast v1+v2 (legacy source mode).</summary>
@@ -117,9 +120,10 @@ public sealed class SendEngine : IDisposable
             catch (Exception ex) { _log.TxWarn($"Send attempt #{Attempt}: {ex.Message}"); }
             if (_userStop || ct.IsCancellationRequested) return;
             Drops++;
-            SetState(SendState.Reconnecting, $"Reconnecting #{Attempt} in 4s…");
-            _log.TxError($"Push lost — retry #{Attempt + 1} in 4s…");
-            try { await Task.Delay(4000, ct); } catch { return; }
+            var wait = Math.Clamp(Config.ReconnectSec, 2, 120);
+            SetState(SendState.Reconnecting, $"Reconnecting #{Attempt} in {wait}s…");
+            _log.TxError($"Push lost — retry #{Attempt + 1} in {wait}s…");
+            try { await Task.Delay(wait * 1000, ct); } catch { return; }
         }
     }
 
@@ -130,6 +134,7 @@ public sealed class SendEngine : IDisposable
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeout.Token);
         await tcp.ConnectAsync(c.Host, c.Port, linked.Token);
+        int targetCh = c.Channels == 1 ? 1 : c.Channels == 2 ? 2 : 0; // 0 = follow device
         var stream = tcp.GetStream();
         stream.WriteTimeout = 10000;
         stream.ReadTimeout = 10000;
@@ -138,11 +143,12 @@ public sealed class SendEngine : IDisposable
         {
             var cred = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{c.User}:{Decode(c.PassB64)}"));
             var nch = Math.Max(1, Math.Min(2, (await ProbeCaptureChannels(c.InputDeviceId))));
+            if (targetCh == 0) targetCh = nch;
             var req = $"PUT {c.Mount} HTTP/1.1\r\nAuthorization: Basic {cred}\r\n" +
                       $"Host: {c.Host}:{c.Port}\r\nUser-Agent: AdoxicSound/{Version}\r\n" +
                       "Content-Type: audio/mpeg\r\n" +
                       $"ice-bitrate: {c.Bitrate}\r\nice-name: Adoxic Sound\r\nice-public: 0\r\n" +
-                      $"ice-audio-info: ice-bitrate={c.Bitrate};ice-channels={nch};ice-samplerate=44100\r\n" +
+                      $"ice-audio-info: ice-bitrate={c.Bitrate};ice-channels={targetCh};ice-samplerate=44100\r\n" +
                       "Expect: 100-continue\r\n\r\n";
             var buf = Encoding.ASCII.GetBytes(req);
             await stream.WriteAsync(buf, ct);
@@ -171,8 +177,9 @@ public sealed class SendEngine : IDisposable
         // capture -> resample 44100/16bit -> MP3 -> socket
         using var cap = OpenCapture(c.InputDeviceId);
         var inFmt = cap.WaveFormat;
-        int ch = Math.Max(1, Math.Min(2, inFmt.Channels));
-        var pcmFmt = new WaveFormat(44100, 16, ch);
+        int srcCh = Math.Max(1, Math.Min(2, inFmt.Channels));
+        if (targetCh < 1 || targetCh > 2) targetCh = srcCh;
+        var pcmFmt = new WaveFormat(44100, 16, targetCh);
         var bwp = new BufferedWaveProvider(inFmt)
         {
             BufferDuration = TimeSpan.FromSeconds(3),
@@ -205,6 +212,12 @@ public sealed class SendEngine : IDisposable
         {
             while (!ct.IsCancellationRequested && !_userStop && tcp.Connected)
             {
+                if (c.CutoffMin > 0 && (DateTime.UtcNow - _lastAudibleUtc).TotalMinutes >= c.CutoffMin)
+                {
+                    _log.TxWarn($"Auto-stopped: mic silent {c.CutoffMin} min");
+                    _userStop = true;
+                    return true;
+                }
                 int n = resampler.Read(pcm, 0, pcm.Length);
                 if (n > 0)
                 {

@@ -10,6 +10,7 @@ public sealed class Settings
     public bool FastMode { get; set; } = true;
     public bool TrayOnClose { get; set; } = true;
     public bool StartOnBoot { get; set; } = false;
+    public bool GoLiveOnBoot { get; set; } = false;
     public bool AlarmEnabled { get; set; } = true;
     public int SilenceSeconds { get; set; } = 30;
     public bool RestoreLast { get; set; } = true;

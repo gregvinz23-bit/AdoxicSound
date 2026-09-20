@@ -48,6 +48,28 @@
                     <ComboBoxItem Content="128 kbps"/><ComboBoxItem Content="160 kbps"/>
                     <ComboBoxItem Content="320 kbps"/>
                 </ComboBox>
+                <TextBlock Text="Channels" FontWeight="Bold"/>
+                <ComboBox x:Name="SendChBox" Margin="0,4,0,12" SelectionChanged="SendCh_Changed">
+                    <ComboBoxItem Content="Auto (follow input)"/>
+                    <ComboBoxItem Content="Force mono"/>
+                    <ComboBoxItem Content="Force stereo"/>
+                </ComboBox>
+                <TextBlock Text="Silence cutoff (auto-stop)" FontWeight="Bold"/>
+                <ComboBox x:Name="SendCutBox" Margin="0,4,0,12" SelectionChanged="SendCut_Changed">
+                    <ComboBoxItem Content="Off"/>
+                    <ComboBoxItem Content="After 5 silent min"/>
+                    <ComboBoxItem Content="After 15 silent min"/>
+                    <ComboBoxItem Content="After 30 silent min"/>
+                    <ComboBoxItem Content="After 60 silent min"/>
+                </ComboBox>
+                <TextBlock Text="Reconnect every" FontWeight="Bold"/>
+                <ComboBox x:Name="SendRetryBox" Margin="0,4,0,12" SelectionChanged="SendRetry_Changed">
+                    <ComboBoxItem Content="4 seconds"/>
+                    <ComboBoxItem Content="10 seconds"/>
+                    <ComboBoxItem Content="30 seconds"/>
+                </ComboBox>
+                <CheckBox x:Name="GoLiveBootToggle" Content="Go live on startup" Style="{StaticResource Toggle}"
+                          Margin="0,6" Checked="GoLiveBoot_Changed" Unchecked="GoLiveBoot_Changed"/>
                 <TextBlock Text="Server connection details stay on the Send tab."
                            Foreground="{DynamicResource FgDim}" TextWrapping="Wrap" Margin="0,8"/>
             </StackPanel>
