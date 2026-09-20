@@ -137,13 +137,22 @@ public sealed class SendEngine : IDisposable
         if (c.Type == SendServerType.Icecast2)
         {
             var cred = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{c.User}:{Decode(c.PassB64)}"));
-            var req = $"PUT {c.Mount} HTTP/1.1\r\nHost: {c.Host}:{c.Port}\r\nAuthorization: Basic {cred}\r\n" +
-                      "Content-Type: audio/mpeg\r\nIce-Public: 0\r\nIce-Name: Adoxic Sound\r\n" +
-                      $"User-Agent: AdoxicSound/{Version}\r\nConnection: keep-alive\r\n\r\n";
+            var nch = Math.Max(1, Math.Min(2, (await ProbeCaptureChannels(c.InputDeviceId))));
+            var req = $"PUT {c.Mount} HTTP/1.1\r\nAuthorization: Basic {cred}\r\n" +
+                      $"Host: {c.Host}:{c.Port}\r\nUser-Agent: AdoxicSound/{Version}\r\n" +
+                      "Content-Type: audio/mpeg\r\n" +
+                      $"ice-bitrate: {c.Bitrate}\r\nice-name: Adoxic Sound\r\nice-public: 0\r\n" +
+                      $"ice-audio-info: ice-bitrate={c.Bitrate};ice-channels={nch};ice-samplerate=44100\r\n" +
+                      "Expect: 100-continue\r\n\r\n";
             var buf = Encoding.ASCII.GetBytes(req);
             await stream.WriteAsync(buf, ct);
             var line = await ReadLine(stream, ct);
-            if (!line.Contains("200")) throw new Exception("server refused (" + line.Trim() + " " + await ReadBody(stream) + ")");
+            if (line.StartsWith("HTTP/1", StringComparison.OrdinalIgnoreCase) && line.Contains(" 100"))
+            {
+                _log.Info("Server sent 100-continue, streaming");
+            }
+            else if (!line.Contains("200"))
+                throw new Exception("server refused (" + line.Trim() + " " + await ReadBody(stream) + ")");
         }
         else
         {
@@ -225,6 +234,17 @@ public sealed class SendEngine : IDisposable
         }
         finally { try { cap.StopRecording(); } catch { } }
         return _userStop;
+    }
+
+    private static async Task<int> ProbeCaptureChannels(string? id)
+    {
+        try
+        {
+            using var cap = OpenCapture(id);
+            await Task.Delay(150);
+            return Math.Max(1, Math.Min(2, cap.WaveFormat.Channels));
+        }
+        catch { return 2; }
     }
 
     private static WasapiCapture OpenCapture(string? id)
