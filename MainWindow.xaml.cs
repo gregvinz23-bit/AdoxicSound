@@ -26,7 +26,6 @@ public partial class MainWindow : Window
     private float _dispL, _dispR;
     private float _sendDisp;
     private bool _sendSilenceAlarmed;
-    private readonly ObservableCollection<string> _presetNames = new();
 
     public MainWindow()
     {
@@ -279,48 +278,31 @@ public partial class MainWindow : Window
         }
     }
 
-    // ---------- send tab ----------
+    // ---------- send tab (single server config, auto-saved) ----------
 
-    private SendPreset _draft = new();
     private bool _sendLoading = true;
     private static readonly int[] SendRates = { 64, 96, 128, 160, 320 };
     private List<(string Id, string Name)> _inputs = new();
+
+    private SendPreset SendCfg()
+    {
+        var s = App.Store.Servers;
+        var p = s.Presets.FirstOrDefault();
+        if (p == null)
+        {
+            p = new SendPreset { Name = "Server" };
+            s.Presets.Add(p);
+            App.Store.SaveServers();
+        }
+        return p;
+    }
 
     private void InitSendTab()
     {
         _inputs = SendEngine.ListInputs();
         SendInputBox.ItemsSource = _inputs.Select(d => d.Name).ToList();
         if (_inputs.Count == 0) SendInputBox.ItemsSource = new List<string> { "No input found" };
-        RefreshPresetNames();
-        var last = App.Store.Servers.LastPreset;
-        var p = App.Store.Servers.Presets.FirstOrDefault(x => x.Name == last)
-                ?? App.Store.Servers.Presets.FirstOrDefault();
-        if (p == null)
-        {
-            p = new SendPreset { Name = "My station" };
-            App.Store.Servers.Presets.Add(p);
-            App.Store.SaveServers();
-            RefreshPresetNames();
-        }
-        LoadPreset(p);
-        _sendLoading = false;
-        RefreshSend();
-    }
-
-    private void RefreshPresetNames()
-    {
-        _presetNames.Clear();
-        foreach (var p in App.Store.Servers.Presets) _presetNames.Add(p.Name);
-        SendPresetBox.ItemsSource = _presetNames;
-    }
-
-    private SendPreset? SelectedPreset() =>
-        SendPresetBox.SelectedItem is string n
-            ? App.Store.Servers.Presets.FirstOrDefault(x => x.Name == n) : null;
-
-    private void LoadPreset(SendPreset p)
-    {
-        _draft = p;
+        var p = SendCfg();
         _sendLoading = true;
         SendTypeBox.SelectedIndex = (int)p.Type;
         SendRateBox.SelectedIndex = Math.Max(0, Array.IndexOf(SendRates, p.Bitrate));
@@ -332,11 +314,8 @@ public partial class MainWindow : Window
         SendPass.Password = DecodeB64(p.PassB64);
         var ii = _inputs.FindIndex(d => d.Id == p.InputDeviceId);
         SendInputBox.SelectedIndex = Math.Max(0, ii >= 0 ? ii : 0);
-        if (App.Store.Servers.Presets.Contains(p))
-            SendPresetBox.SelectedItem = p.Name;
-        App.Store.Servers.LastPreset = p.Name;
-        App.Store.SaveServers();
         _sendLoading = false;
+        RefreshSend();
     }
 
     private static string DecodeB64(string b)
@@ -345,17 +324,10 @@ public partial class MainWindow : Window
         catch { return b; }
     }
 
-    private void SendPresetBox_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (_sendLoading) return;
-        var p = SelectedPreset();
-        if (p != null) LoadPreset(p);
-    }
-
     private void SendField_Changed(object sender, RoutedEventArgs e)
     {
         if (_sendLoading) return;
-        var p = SelectedPreset() ?? _draft;
+        var p = SendCfg();
         p.Type = (SendServerType)Math.Max(0, SendTypeBox.SelectedIndex);
         p.Bitrate = SendRates[Math.Max(0, SendRateBox.SelectedIndex)];
         p.Host = SendHost.Text.Trim();
@@ -368,41 +340,11 @@ public partial class MainWindow : Window
         App.Store.SaveServers();
     }
 
-    private void SendPresetSave_Click(object sender, RoutedEventArgs e)
-    {
-        var p = SelectedPreset();
-        if (p == null)
-        {
-            p = new SendPreset { Name = "Station " + (App.Store.Servers.Presets.Count + 1) };
-            App.Store.Servers.Presets.Add(p);
-        }
-        SendField_Changed(sender, e);
-        RefreshPresetNames();
-        SendPresetBox.SelectedItem = p.Name;
-        App.Store.Servers.LastPreset = p.Name;
-        App.Store.SaveServers();
-        App.Log.Info("Server preset saved: " + p.Name);
-    }
-
-    private void SendPresetDel_Click(object sender, RoutedEventArgs e)
-    {
-        var p = SelectedPreset();
-        if (p == null) return;
-        var wasLive = App.Send.State != SendState.Stopped;
-        if (wasLive) App.Send.Stop();
-        App.Store.Servers.Presets.Remove(p);
-        App.Store.SaveServers();
-        RefreshPresetNames();
-        var next = App.Store.Servers.Presets.FirstOrDefault();
-        if (next != null) LoadPreset(next);
-        App.Log.Info("Server preset deleted: " + p.Name);
-    }
-
     private void GoLiveButton_Click(object sender, RoutedEventArgs e)
     {
         if (App.Send.State != SendState.Stopped) { App.Send.Stop(); return; }
         SendField_Changed(sender, e);
-        var p = SelectedPreset() ?? _draft;
+        var p = SendCfg();
         if (string.IsNullOrWhiteSpace(p.Host)) { App.Log.Error("Enter the server host first"); return; }
         if (string.IsNullOrEmpty(DecodeB64(p.PassB64))) { App.Log.Error("Enter the server password first"); return; }
         p.InputDeviceId = SendInputBox.SelectedIndex >= 0 && SendInputBox.SelectedIndex < _inputs.Count
