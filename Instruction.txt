@@ -68,8 +68,8 @@ STREAM tab:
   play.
 - Stable buffering: OFF = fast start (~1-2s), ON = slower start with a
   1-second reserve against network hiccups. Applies on next play.
-- Auto balance: evens out left/right if one side stays weak. Leave on
-  unless you want to hear feed faults raw.
+- L/R meters show the raw feed exactly as received, so channel faults
+  stay visible instead of being hidden.
 - Alarm on silence/drop + after: tray popup + log entry when the stream
   drops or goes silent longer than the set seconds. No sounds.
 - Minimize to tray on close: X hides the program (audio keeps playing).
