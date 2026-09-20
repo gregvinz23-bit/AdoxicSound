@@ -107,10 +107,15 @@ public sealed class StreamEngine : IDisposable
 
     public void Stop()
     {
+        if (State == EngineState.Stopped) return;
         _userStop = true;
+        var up = TimeSpan.FromSeconds(_healthySec);
+        var drops = _sessionDrops;
+        var url = ShortUrl();
         FlushLifetime();
         StopInternal(user: true);
         _downSince = null;
+        _log.Info($"Stopped ({url} — session Up {up:hh\\:mm\\:ss}, Drops {drops})");
         SetState(EngineState.Stopped, "Stopped", "");
     }
 
