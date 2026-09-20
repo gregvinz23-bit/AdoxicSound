@@ -137,9 +137,9 @@ public sealed class SendEngine : IDisposable
         if (c.Type == SendServerType.Icecast2)
         {
             var cred = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{c.User}:{Decode(c.PassB64)}"));
-            var req = $"PUT {c.Mount} HTTP/1.0\r\nAuthorization: Basic {cred}\r\n" +
+            var req = $"PUT {c.Mount} HTTP/1.1\r\nHost: {c.Host}:{c.Port}\r\nAuthorization: Basic {cred}\r\n" +
                       "Content-Type: audio/mpeg\r\nIce-Public: 0\r\nIce-Name: Adoxic Sound\r\n" +
-                      $"User-Agent: AdoxicSound/{Version}\r\n\r\n";
+                      $"User-Agent: AdoxicSound/{Version}\r\nConnection: keep-alive\r\n\r\n";
             var buf = Encoding.ASCII.GetBytes(req);
             await stream.WriteAsync(buf, ct);
             var line = await ReadLine(stream, ct);
