@@ -1,0 +1,111 @@
+AoIP RX — Instructions
+==============================
+A portable Windows receiver for live MMS and Shoutcast/Icecast radio —
+with auto-reconnect, accurate stereo meters, and automatic balance correction.
+© 2026 Mantraix Software. All rights reserved.
+
+1. WHAT YOU DOWNLOADED
+----------------------
+The portable zip contains everything the program needs.
+There is no installer. Contents after extracting:
+  AoIP-RX.exe                  the program (double-click to run)
+  libvlc\                      audio engine files (do not delete)
+  *.dll                        system files the program needs (do not delete)
+  settings.json                created on first run (your settings)
+  streams.json                 created when you save a station
+  logs\                        daily log files + exported logs
+
+2. REQUIREMENTS
+---------------
+- Windows 10 or Windows 11, 64-bit.
+- A working audio device (onboard sound, dedicated soundcard, or HDMI
+  audio). Install your audio driver first — without one the program shows
+  "No output found" and cannot play.
+- Network access to your streams (local network and/or internet,
+  depending on where your stations live).
+- No .NET install, no admin rights needed.
+
+3. FIRST RUN
+------------
+1. Extract the zip anywhere (Documents, Desktop, or a USB stick).
+2. Double-click AoIP-RX.exe.
+   NOTE: the very first start can take 30-60 seconds (Windows checks the
+   new file once). After that it opens in seconds.
+3. If Windows SmartScreen says "Unknown publisher": click
+   More info > Run anyway. The file is unsigned, not unsafe. You can
+   verify it with the SHA-256 hash on the release page.
+
+4. PLAYING A STREAM
+-------------------
+STREAM tab:
+1. Type a stream address in the box, e.g.
+     mms://your-media-server:port
+     http://your-stream-host:port
+     https://your-stream-host/live
+2. Press STREAM (becomes STOP while playing).
+3. Status line shows: Ready / Connecting / Buffering / Playing /
+   Reconnecting #N, plus codec info like "MP3 2ch 128k 44100Hz".
+4. mms:// stations need a few seconds to negotiate before sound starts.
+   Web radio usually starts in 1-2 seconds. This is normal.
+5. + Add saves the address to your station list, Remove deletes the
+   selected one. Click a saved station to load it into the box.
+
+5. L/R METERS AND STATS
+-----------------------
+- Green/yellow/red bars show true left/right loudness with dB numbers.
+- Stats line: Up = healthy airtime this session, Drops = reconnects,
+  Glitches = momentary audio blips, Alarms = warnings fired.
+- Lifetime line: totals for this station across all sessions.
+  Reset clears the lifetime totals for the loaded station only.
+
+6. SETTINGS (gear button, separate window)
+------------------------------------------
+- Output device: where sound plays. Devices connected before starting
+  are listed; devices connected later appear live while running.
+  Applies on next play.
+- Sample rate: 44100 Hz (best for web radio), 48000 Hz (broadcast
+  standard, default), 96000 Hz (special hardware only). Applies on next
+  play.
+- Stable buffering: OFF = fast start (~1-2s), ON = slower start with a
+  1-second reserve against network hiccups. Applies on next play.
+- Auto balance: evens out left/right if one side stays weak. Leave on
+  unless you want to hear feed faults raw.
+- Alarm on silence/drop + after: tray popup + log entry when the stream
+  drops or goes silent longer than the set seconds. No sounds.
+- Minimize to tray on close: X hides the program (audio keeps playing).
+  Double-click the tray icon to return, right-click for Stop/Exit.
+- Start on system startup: launches automatically with Windows.
+
+7. LOGS TAB
+-----------
+- Live record of connects, drops, retries, alarms, and settings changes.
+- Filter by INFO/WARN/ERROR, Clear wipes the screen (file stays).
+- Export saves what you see to a timestamped text file next to the exe.
+
+8. ABOUT TAB
+------------
+- Version, credits, and Check for updates (compares with the newest
+  release and opens the download page when a newer one exists).
+
+9. IF SOMETHING IS WRONG
+------------------------
+- No sound, meters flat: check Output device in Settings, Windows volume
+  and that the right playback device is enabled in Windows Sound settings.
+- "Reconnecting #N" forever: the address is wrong, the server is down,
+  or the network path is blocked. Test the address in VLC media player.
+- Frequent drops/glitches on web radio: switch Stable buffering ON.
+- Audio device missing from the list: connect it, wait a few seconds. If
+  it was connected mid-session it appears live; if the playing device is
+  removed the program moves to the Windows default by itself.
+- Program won't start: install the audio driver, then retry. Logs in the
+  logs\ folder record what happened — attach the latest one when asking
+  for help.
+
+10. UPDATING / UNINSTALLING
+--------------------------
+- Updating: download the new zip, extract into a FRESH folder, copy your
+  old streams.json and settings.json over if you want to keep stations
+  and settings. Or press Check for updates in About.
+- Uninstalling: delete the folder. Nothing is installed anywhere else,
+  except an auto-start entry if you enabled Start on system startup
+  (turn it off first to remove that entry).

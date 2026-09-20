@@ -222,8 +222,6 @@
                             <ComboBoxItem Content="300 s"/>
                         </ComboBox>
                     </StackPanel>
-                    <CheckBox x:Name="BalanceToggle" Content="Auto balance" Style="{StaticResource Toggle}"
-                              Margin="0,6" Checked="BalanceToggle_Changed" Unchecked="BalanceToggle_Changed"/>
                     <CheckBox x:Name="TrayToggle" Content="Minimize to tray on close" Style="{StaticResource Toggle}"
                               Margin="0,6" Checked="TrayToggle_Changed" Unchecked="TrayToggle_Changed"/>
                     <CheckBox x:Name="BootToggle" Content="Start on system startup" Style="{StaticResource Toggle}"

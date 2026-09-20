@@ -29,7 +29,6 @@ public partial class App : System.Windows.Application
         Log = new Logger();
         Engine = new StreamEngine(Log);
         Engine.Configure(Store.Settings.SampleRate, Store.Settings.FastMode);
-        Engine.AutoBalance = Store.Settings.AutoBalance;
         ApplyStartOnBoot();
         SetupTray();
         Watcher = new DeviceWatcher();

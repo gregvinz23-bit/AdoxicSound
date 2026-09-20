@@ -39,18 +39,7 @@ public sealed class StreamEngine : IDisposable
     // meters (linear 0..1 block peak, written by audio thread, consumed by UI)
     private volatile float _peakL, _peakR;
 
-    // auto-balance: slow gain trim on the weaker channel
-    private double _gainDbL, _gainDbR;      // applied correction, clamped ±6
-    private double _sumSqL, _sumSqR;
-    private long _sumN;
-    private DateTime _windowStart = DateTime.UtcNow;
-    private DateTime _imbalancedSince = DateTime.UtcNow;
-    private DateTime _lastImbalance = DateTime.MinValue;
-    private DateTime _lastBalanceLog = DateTime.MinValue;
-    private double _lastDiff;
-    private bool _engaged;
-    private bool _imbalanceLogged;
-    private bool _autoBalance = true;
+    // auto-balance removed: meters show the raw source signal
 
     public event Action? StateChanged;
 
@@ -61,23 +50,8 @@ public sealed class StreamEngine : IDisposable
     public string? ActiveDeviceId { get; private set; }
     public string CurrentUrl => _url;
     public bool IsPlayingAudio => State == EngineState.Playing && !_noOutput;
-    public double BalanceDbL => _gainDbL;
-    public double BalanceDbR => _gainDbR;
 
     public StreamEngine(Logger log) => _log = log;
-
-    public bool AutoBalance
-    {
-        get => _autoBalance;
-        set
-        {
-            _autoBalance = value;
-            _gainDbL = _gainDbR = 0;
-            _engaged = false;
-            _lastImbalance = DateTime.MinValue;
-            _imbalanceLogged = false;
-        }
-    }
 
     public void Configure(int sampleRate, bool fastMode)
     {
@@ -112,13 +86,6 @@ public sealed class StreamEngine : IDisposable
         _userStop = false;
         _url = url.Trim();
         _attempt = 0;
-        _gainDbL = _gainDbR = 0;
-        _sumSqL = _sumSqR = 0; _sumN = 0;
-        _imbalancedSince = DateTime.UtcNow;
-        _lastImbalance = DateTime.MinValue;
-        _lastDiff = 0;
-        _engaged = false;
-        _imbalanceLogged = false;
         _sessionStarted = false;
         _healthySec = 0;
         _sessionDrops = 0;
@@ -366,29 +333,17 @@ public sealed class StreamEngine : IDisposable
 
     private void ProcessPcm16(byte[] buf)
     {
+        // raw source peaks for meters; no DSP — what the station sends is what you see
         float peakL = 0, peakR = 0;
-        double gL = Math.Pow(10, _gainDbL / 20), gR = Math.Pow(10, _gainDbR / 20);
         for (int i = 0; i + 3 < buf.Length; i += 4)
         {
             short sL = (short)(buf[i] | (buf[i + 1] << 8));
             short sR = (short)(buf[i + 2] | (buf[i + 3] << 8));
-            double dL = sL / 32768.0, dR = sR / 32768.0;
-            _sumSqL += dL * dL; _sumSqR += dR * dR; _sumN++;
-
-            if (_autoBalance)
-            {
-                dL = Math.Clamp(dL * gL, -1, 1);
-                dR = Math.Clamp(dR * gR, -1, 1);
-                int oL = (int)(dL * 32767), oR = (int)(dR * 32767);
-                buf[i] = (byte)(oL & 0xFF); buf[i + 1] = (byte)((oL >> 8) & 0xFF);
-                buf[i + 2] = (byte)(oR & 0xFF); buf[i + 3] = (byte)((oR >> 8) & 0xFF);
-            }
-            float aL = Math.Abs((float)dL), aR = Math.Abs((float)dR);
+            float aL = Math.Abs(sL / 32768f), aR = Math.Abs(sR / 32768f);
             if (aL > peakL) peakL = aL;
             if (aR > peakR) peakR = aR;
         }
         _peakL = peakL; _peakR = peakR;
-        UpdateBalance();
     }
 
     /// <summary>UI thread: grab latest block peaks (time-based smoothing happens caller-side).</summary>
@@ -398,61 +353,6 @@ public sealed class StreamEngine : IDisposable
         _peakL = 0; _peakR = 0;
         return (l, r);
     }
-
-    private void UpdateBalance()
-    {
-        if (!_autoBalance || _sumN < (uint)_rate) return; // ~1s of audio
-        var rmsL = Math.Sqrt(_sumSqL / _sumN);
-        var rmsR = Math.Sqrt(_sumSqR / _sumN);
-        _sumSqL = _sumSqR = 0; _sumN = 0;
-
-        double dbL = 20 * Math.Log10(rmsL + 1e-9);
-        double dbR = 20 * Math.Log10(rmsR + 1e-9);
-        if (dbL < -50 || dbR < -50) return; // silence / dead channel: hold gains
-        double diff = dbL - dbR; // + => L louder at source (pre-gain measurement)
-        var now = DateTime.UtcNow;
-        if (Math.Abs(diff) >= 2 && Math.Abs(diff) <= 10)
-        {
-            if ((now - _lastImbalance).TotalSeconds > 10) _imbalancedSince = now; // new episode
-            _lastImbalance = now;
-            _lastDiff = diff;
-        }
-
-        // engage only after 5s of sustained imbalance; release 10s after it stops
-        if (!_engaged && (now - _imbalancedSince).TotalSeconds < 5) return;
-        if ((now - _lastImbalance).TotalSeconds > 10)
-        {
-            if (_engaged && (_gainDbL > 0 || _gainDbR > 0))
-                _log.Info("Auto-balance released (source balanced)");
-            _engaged = false;
-        }
-        else _engaged = true;
-        if (!_engaged) return;
-
-        // targets from the last measured gap: boost weaker channel only, max +6dB
-        double tL = 0, tR = 0;
-        if (_lastDiff > 0) tR = Math.Min(6, _lastDiff);
-        else tL = Math.Min(6, -_lastDiff);
-
-        double before = _gainDbL + _gainDbR;
-        _gainDbR = MoveToward(_gainDbR, tR, 0.5);
-        _gainDbL = MoveToward(_gainDbL, tL, 0.5);
-        if (!_imbalanceLogged)
-        {
-            _imbalanceLogged = true;
-            _lastBalanceLog = now;
-            _log.Info($"Auto-balance engaged (L {dbL:F1}dB / R {dbR:F1}dB)");
-        }
-        else if (Math.Abs((_gainDbL + _gainDbR) - before) > 0.01 &&
-                 (now - _lastBalanceLog).TotalSeconds > 15)
-        {
-            _lastBalanceLog = now;
-            _log.Info($"Auto-balance now +{_gainDbL:F1}dB L / +{_gainDbR:F1}dB R");
-        }
-    }
-
-    private static double MoveToward(double v, double target, double step) =>
-        v < target ? Math.Min(target, v + step) : Math.Max(target, v - step);
 
     // ---------- libvlc events / info ----------
 

@@ -63,7 +63,6 @@ public partial class MainWindow : Window
 
         RateCombo.SelectedIndex = App.Store.Settings.SampleRate switch { 44100 => 0, 96000 => 2, _ => 1 };
         ModeToggle.IsChecked = !App.Store.Settings.FastMode;
-        BalanceToggle.IsChecked = App.Store.Settings.AutoBalance;
         TrayToggle.IsChecked = App.Store.Settings.TrayOnClose;
         BootToggle.IsChecked = App.Store.Settings.StartOnBoot;
         AlarmToggle.IsChecked = App.Store.Settings.AlarmEnabled;
@@ -298,15 +297,6 @@ public partial class MainWindow : Window
     }
 
     // ---------- settings toggles ----------
-
-    private void BalanceToggle_Changed(object sender, RoutedEventArgs e)
-    {
-        if (_loading) return;
-        App.Store.Settings.AutoBalance = BalanceToggle.IsChecked == true;
-        App.Engine.AutoBalance = App.Store.Settings.AutoBalance;
-        App.Store.SaveSettings();
-        App.Log.Info("Auto balance " + (App.Store.Settings.AutoBalance ? "ON" : "OFF"));
-    }
 
     private void TrayToggle_Changed(object sender, RoutedEventArgs e)
     {

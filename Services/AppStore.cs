@@ -8,7 +8,6 @@ public sealed class Settings
     public string? OutputDeviceId { get; set; }
     public int SampleRate { get; set; } = 48000;
     public bool FastMode { get; set; } = true;
-    public bool AutoBalance { get; set; } = true;
     public bool TrayOnClose { get; set; } = true;
     public bool StartOnBoot { get; set; } = false;
     public bool AlarmEnabled { get; set; } = true;
