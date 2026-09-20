@@ -101,7 +101,7 @@ public sealed class StreamEngine : IDisposable
         _loop.ContinueWith(t =>
         {
             if (t.IsFaulted)
-                _log.Error("Engine crashed: " + (t.Exception?.GetBaseException().Message ?? "?"));
+                _log.RxError("Engine crashed: " + (t.Exception?.GetBaseException().Message ?? "?"));
         });
     }
 
@@ -115,7 +115,7 @@ public sealed class StreamEngine : IDisposable
         FlushLifetime();
         StopInternal(user: true);
         _downSince = null;
-        _log.Info($"Stopped ({url} — session Up {up:hh\\:mm\\:ss}, Drops {drops})");
+        _log.RxInfo($"Stopped ({url} — session Up {up:hh\\:mm\\:ss}, Drops {drops})");
         SetState(EngineState.Stopped, "Stopped", "");
     }
 
@@ -151,7 +151,7 @@ public sealed class StreamEngine : IDisposable
             if (_attempt >= 3 && current.StartsWith("mms://", StringComparison.OrdinalIgnoreCase))
             {
                 current = "http://" + current[6..];
-                _log.Warn($"MMS retry via fallback {current}");
+                _log.RxWarn($"MMS retry via fallback {current}");
             }
             try
             {
@@ -160,11 +160,11 @@ public sealed class StreamEngine : IDisposable
                 RegisterDrop(_dropReason ?? "reconnect");
             }
             catch (OperationCanceledException) { return; }
-            catch (Exception ex) { _log.Warn($"Attempt #{_attempt} error: {ex.Message}"); }
+            catch (Exception ex) { _log.RxWarn($"Attempt #{_attempt} error: {ex.Message}"); }
 
             if (_userStop || ct.IsCancellationRequested) return;
             SetState(EngineState.Reconnecting, $"Reconnecting #{_attempt} in 4s…", DetailText);
-            _log.Warn($"Drop detected, retry #{_attempt + 1} in 4s…");
+            _log.RxWarn($"Drop detected, retry #{_attempt + 1} in 4s…");
             try { await Task.Delay(4000, ct); } catch { return; }
         }
     }
@@ -173,7 +173,7 @@ public sealed class StreamEngine : IDisposable
     {
         SetState(_attempt > 1 ? EngineState.Reconnecting : EngineState.Connecting,
             _attempt > 1 ? $"Reconnecting #{_attempt}…" : "Connecting…", "");
-        _log.Info((_attempt > 1 ? $"Retry #{_attempt}: " : "Connecting: ") + url);
+        _log.RxInfo((_attempt > 1 ? $"Retry #{_attempt}: " : "Connecting: ") + url);
 
         CleanupAudio();
         try { _player?.Dispose(); } catch { }
@@ -195,15 +195,15 @@ public sealed class StreamEngine : IDisposable
         _player.EndReached += (_, _) => { if (!_userStop) OnDone(); };
         _player.EncounteredError += (_, _) => OnDone();
 
-        if (!_player.Play()) { _log.Error("Player refused to start"); _dropReason = "start refused"; return false; }
+        if (!_player.Play()) { _log.RxError("Player refused to start"); _dropReason = "start refused"; return false; }
 
         // wait for first audio (or error/end) up to 20s
         var okStart = await WaitForAudioOrDone(played.Task, TimeSpan.FromSeconds(20), ct);
-        if (!okStart) { _log.Warn("No audio received (timeout)"); _dropReason = "no audio (timeout)"; return false; }
+        if (!okStart) { _log.RxWarn("No audio received (timeout)"); _dropReason = "no audio (timeout)"; return false; }
 
         SetState(EngineState.Playing, "Playing", "");
         RefreshTrackInfo();
-        _log.Info("Playing: " + DetailText);
+        _log.RxInfo("Playing: " + DetailText);
         NoteRecovered();
 
         // health watchdog, 1s tick: stall => reconnect, silence => alarm
@@ -215,7 +215,7 @@ public sealed class StreamEngine : IDisposable
             var gap = DateTime.UtcNow - new DateTime(Interlocked.Read(ref _pcmTicks), DateTimeKind.Utc);
             if (!_noOutput && _player?.IsPlaying == true && gap > TimeSpan.FromSeconds(5))
             {
-                _log.Warn("Stall: no audio for 5s");
+                _log.RxWarn("Stall: no audio for 5s");
                 _dropReason = "stall 5s";
                 return false;
             }
@@ -260,10 +260,10 @@ public sealed class StreamEngine : IDisposable
             if (_noOutput)
             {
                 _noOutput = false;
-                _log.Info("Output restored: " + _device.FriendlyName);
+                _log.RxInfo("Output restored: " + _device.FriendlyName);
                 NoteRecovered();
             }
-            else _log.Info($"Output: {_device.FriendlyName} @ {_rate}Hz");
+            else _log.RxInfo($"Output: {_device.FriendlyName} @ {_rate}Hz");
         }
         catch
         {
@@ -272,7 +272,7 @@ public sealed class StreamEngine : IDisposable
             if (!_noOutput)
             {
                 _noOutput = true;
-                _log.Error("No audio output available — waiting for device");
+                _log.RxError("No audio output available — waiting for device");
                 SetState(State, "No output — waiting for device", DetailText);
             }
         }
@@ -285,7 +285,7 @@ public sealed class StreamEngine : IDisposable
         if (!string.IsNullOrEmpty(want))
         {
             try { return e.GetDevice(want); }
-            catch { _log.Warn("Saved output missing, using default"); }
+            catch { _log.RxWarn("Saved output missing, using default"); }
         }
         return e.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
     }
@@ -328,7 +328,7 @@ public sealed class StreamEngine : IDisposable
                 if (_silenceAlarmed)
                 {
                     _silenceAlarmed = false;
-                    _log.Info("Sound back after silence");
+                    _log.RxInfo("Sound back after silence");
                 }
                 _lastAudibleUtc = DateTime.UtcNow;
             }
@@ -367,7 +367,7 @@ public sealed class StreamEngine : IDisposable
         Core.Initialize();
         _lib = new LibVLC("--no-video", "--no-stats", "--network-caching=" + _cache,
             "--live-caching=" + _cache);
-        _log.Info("LibVLC ready (cache " + _cache + "ms)");
+        _log.RxInfo("LibVLC ready (cache " + _cache + "ms)");
     }
 
     private void HookPlayer(MediaPlayer p)
@@ -428,7 +428,7 @@ public sealed class StreamEngine : IDisposable
                 if (!string.IsNullOrEmpty(title))
                 {
                     DetailText = DetailText.Split(" ♪")[0] + " ♪ " + title;
-                    _log.Info("Now playing: " + title);
+                    _log.RxInfo("Now playing: " + title);
                     StateChanged?.Invoke();
                 }
             }
@@ -502,7 +502,7 @@ public sealed class StreamEngine : IDisposable
         if ((DateTime.UtcNow - _lastDropAlarm).TotalMinutes < 5) return;
         _lastDropAlarm = DateTime.UtcNow;
         _alarmsToday++;
-        _log.Error($"Stream lost ({reason}) — retrying…");
+        _log.RxError($"Stream lost ({reason}) — retrying…");
         app2.NotifyBalloon("Adoxic Sound — stream lost", $"{ShortUrl()} ({reason}) — retrying…");
     }
 
@@ -511,7 +511,7 @@ public sealed class StreamEngine : IDisposable
         if (_downSince == null) return;
         var gap = DateTime.UtcNow - _downSince.Value;
         _downSince = null;
-        _log.Info($"Recovered after {gap:hh\\:mm\\:ss}");
+        _log.RxInfo($"Recovered after {gap:hh\\:mm\\:ss}");
     }
 
     private void CheckSilence()
@@ -524,7 +524,7 @@ public sealed class StreamEngine : IDisposable
         if ((DateTime.UtcNow - _lastSilenceAlarm).TotalMinutes < 5) return;
         _lastSilenceAlarm = DateTime.UtcNow;
         _alarmsToday++;
-        _log.Error($"Silence {(int)quietFor}s on {ShortUrl()}");
+        _log.RxError($"Silence {(int)quietFor}s on {ShortUrl()}");
         app.NotifyBalloon("Adoxic Sound — silence", $"No audio for {(int)quietFor}s on {ShortUrl()}");
     }
 
@@ -539,7 +539,7 @@ public sealed class StreamEngine : IDisposable
     {
         if (State == EngineState.Stopped) return;
         if (!string.IsNullOrEmpty(ActiveDeviceId) && ActiveDeviceId != deviceId) return;
-        _log.Error("Output device lost — switching to default");
+        _log.RxError("Output device lost — switching to default");
         try
         {
             if (App.Current is App app)

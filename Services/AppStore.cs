@@ -20,6 +20,8 @@ public sealed class Settings
     public double SetWinY { get; set; } = -1;
     public double LogWinX { get; set; } = -1;
     public double LogWinY { get; set; } = -1;
+    public double TxLogWinX { get; set; } = -1;
+    public double TxLogWinY { get; set; } = -1;
     public Dictionary<string, UrlStatRecord> UrlStats { get; set; } = new();
 }
 

@@ -9,17 +9,33 @@ public partial class LogsWindow : Window
 {
     private App App => (App)Application.Current;
     private readonly MainWindow _main;
+    private readonly string _source; // RX or TX; APP lines show in both
     private string _logFilter = "All";
 
-    public LogsWindow(MainWindow main)
+    public LogsWindow(MainWindow main, string source)
     {
         _main = main;
+        _source = source;
         Owner = main;
         InitializeComponent();
-        LogList.ItemsSource = App.Log.Lines;
-        if (App.Log.Lines.Count > 0) LogList.ScrollIntoView(App.Log.Lines[^1]);
-        Closed += (_, _) => _main.OnLogsClosed();
+        Title = source == "TX" ? "Logs — Send" : "Logs — Stream";
+        ApplyFilter();
+        if (LogList.Items.Count > 0) LogList.ScrollIntoView(LogList.Items[^1]);
+        App.Log.Lines.CollectionChanged += OnLinesChanged;
+        Closed += (_, _) =>
+        {
+            App.Log.Lines.CollectionChanged -= OnLinesChanged;
+            _main.OnLogsClosed(_source);
+        };
     }
+
+    private void OnLinesChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) =>
+        Dispatcher.BeginInvoke(() =>
+        {
+            ApplyFilter();
+            if (AutoScrollBox.IsChecked == true && LogList.Items.Count > 0)
+                LogList.ScrollIntoView(LogList.Items[^1]);
+        });
 
     private void LogFilter_Changed(object sender, SelectionChangedEventArgs e)
     {
@@ -28,11 +44,15 @@ public partial class LogsWindow : Window
         ApplyFilter();
     }
 
+    private bool SourceMatch(string line) =>
+        line.Contains($"[{_source}]") || line.Contains("[APP]") || (!line.Contains("[RX]") && !line.Contains("[TX]"));
+
     private void ApplyFilter()
     {
         if (LogList == null) return;
-        if (_logFilter == "All") LogList.ItemsSource = App.Log.Lines;
-        else LogList.ItemsSource = App.Log.Lines.Where(l => l.Contains($"[{_logFilter}]")).ToList();
+        var lines = App.Log.Lines.Where(SourceMatch);
+        if (_logFilter != "All") lines = lines.Where(l => l.Contains($"[{_logFilter}]"));
+        LogList.ItemsSource = lines.ToList();
         if (AutoScrollBox.IsChecked == true && LogList.Items.Count > 0)
             LogList.ScrollIntoView(LogList.Items[^1]);
     }

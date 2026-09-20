@@ -86,7 +86,7 @@ public sealed class SendEngine : IDisposable
         _loop.ContinueWith(t =>
         {
             if (t.IsFaulted)
-                _log.Error("Send engine crashed: " + (t.Exception?.GetBaseException().Message ?? "?"));
+                _log.TxError("Send engine crashed: " + (t.Exception?.GetBaseException().Message ?? "?"));
         });
     }
 
@@ -98,7 +98,7 @@ public sealed class SendEngine : IDisposable
         if (State != SendState.Stopped)
         {
             SetState(SendState.Stopped, "Off air");
-            if (!silent) _log.Info($"Off air ({BytesSent / 1024}KB sent, {Drops} drops)");
+            if (!silent) _log.TxInfo($"Off air ({BytesSent / 1024}KB sent, {Drops} drops)");
         }
     }
 
@@ -114,11 +114,11 @@ public sealed class SendEngine : IDisposable
                 if (await TrySend(ct)) return;
             }
             catch (OperationCanceledException) { return; }
-            catch (Exception ex) { _log.Warn($"Send attempt #{Attempt}: {ex.Message}"); }
+            catch (Exception ex) { _log.TxWarn($"Send attempt #{Attempt}: {ex.Message}"); }
             if (_userStop || ct.IsCancellationRequested) return;
             Drops++;
             SetState(SendState.Reconnecting, $"Reconnecting #{Attempt} in 4s…");
-            _log.Error($"Push lost — retry #{Attempt + 1} in 4s…");
+            _log.TxError($"Push lost — retry #{Attempt + 1} in 4s…");
             try { await Task.Delay(4000, ct); } catch { return; }
         }
     }
@@ -149,7 +149,7 @@ public sealed class SendEngine : IDisposable
             var line = await ReadLine(stream, ct);
             if (line.StartsWith("HTTP/1", StringComparison.OrdinalIgnoreCase) && line.Contains(" 100"))
             {
-                _log.Info("Server sent 100-continue, streaming");
+                _log.TxInfo("Server sent 100-continue, streaming");
             }
             else if (!line.Contains("200"))
                 throw new Exception("server refused (" + line.Trim() + " " + await ReadBody(stream) + ")");
@@ -194,7 +194,7 @@ public sealed class SendEngine : IDisposable
 
         SetState(SendState.Live, "Live");
         LiveSince = DateTime.UtcNow;
-        _log.Info($"On air: {ServerLabel()} @ {c.Bitrate}k");
+        _log.TxInfo($"On air: {ServerLabel()} @ {c.Bitrate}k");
         var pcm = new byte[16384];
         // pace to realtime: the resampler emits as fast as pulled, so throttle
         // consumption to the PCM clock or we'd flood the server with silence

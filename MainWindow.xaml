@@ -103,7 +103,7 @@
                     </Grid>
                     <Button x:Name="GoLiveButton" Content="●  GO LIVE" FontSize="16" Padding="14,10"
                             Background="#2AA9E0" Click="GoLiveButton_Click" Margin="0,8"/>
-                    <Button x:Name="SendLogsButton" Content="Logs" Click="LogsButton_Click"
+                    <Button x:Name="SendLogsButton" Content="Logs" Click="SendLogsButton_Click"
                             HorizontalAlignment="Center" Padding="20,4" Margin="0,0,0,4"/>
                     <TextBlock x:Name="SendStats" Text="" HorizontalAlignment="Center"
                                Foreground="{DynamicResource FgDim}" FontSize="11"/>

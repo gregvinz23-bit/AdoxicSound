@@ -21,9 +21,9 @@ public sealed class Logger
         _filePath = Path.Combine(dir, $"AdoxicSound-{DateTime.Now:yyyyMMdd}.txt");
     }
 
-    public void Log(string level, string message)
+    public void Log(string level, string message, string source = "APP")
     {
-        var line = $"{DateTime.Now:HH:mm:ss} [{level}] {message}";
+        var line = $"{DateTime.Now:HH:mm:ss} [{level}] [{source}] {message}";
         lock (_gate)
         {
             try { File.AppendAllText(_filePath, line + Environment.NewLine, Encoding.UTF8); } catch { }
@@ -42,6 +42,12 @@ public sealed class Logger
     public void Info(string m) => Log("INFO", m);
     public void Warn(string m) => Log("WARN", m);
     public void Error(string m) => Log("ERROR", m);
+    public void RxInfo(string m) => Log("INFO", m, "RX");
+    public void RxWarn(string m) => Log("WARN", m, "RX");
+    public void RxError(string m) => Log("ERROR", m, "RX");
+    public void TxInfo(string m) => Log("INFO", m, "TX");
+    public void TxWarn(string m) => Log("WARN", m, "TX");
+    public void TxError(string m) => Log("ERROR", m, "TX");
 
     public string ExportView(IEnumerable<string> visibleLines)
     {

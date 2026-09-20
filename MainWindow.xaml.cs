@@ -188,10 +188,12 @@ public partial class MainWindow : Window
     // ---------- child windows ----------
 
     private SettingsWindow? _settingsWin;
-    private LogsWindow? _logsWin;
+    private LogsWindow? _rxLogsWin;
+    private LogsWindow? _txLogsWin;
 
     private void SettingsButton_Click(object sender, RoutedEventArgs e) => OpenSettings();
-    private void LogsButton_Click(object sender, RoutedEventArgs e) => OpenLogs();
+    private void LogsButton_Click(object sender, RoutedEventArgs e) => OpenRxLogs();
+    private void SendLogsButton_Click(object sender, RoutedEventArgs e) => OpenTxLogs();
 
     public void OpenSettings()
     {
@@ -204,15 +206,22 @@ public partial class MainWindow : Window
         _settingsWin.Activate();
     }
 
-    public void OpenLogs()
+    public void OpenRxLogs() => OpenLogsWin("RX");
+    public void OpenTxLogs() => OpenLogsWin("TX");
+
+    private void OpenLogsWin(string source)
     {
-        if (_logsWin == null)
+        var win = source == "TX" ? _txLogsWin : _rxLogsWin;
+        if (win == null)
         {
-            _logsWin = new LogsWindow(this);
-            Place(_logsWin, App.Store.Settings.LogWinX, App.Store.Settings.LogWinY);
+            win = new LogsWindow(this, source);
+            if (source == "TX") _txLogsWin = win; else _rxLogsWin = win;
+            var s = App.Store.Settings;
+            Place(win, source == "TX" ? s.TxLogWinX : s.LogWinX,
+                       source == "TX" ? s.TxLogWinY : s.LogWinY);
         }
-        _logsWin.Show();
-        _logsWin.Activate();
+        win.Show();
+        win.Activate();
     }
 
     private void Place(Window w, double x, double y)
@@ -238,14 +247,15 @@ public partial class MainWindow : Window
         }
     }
 
-    public void OnLogsClosed()
+    public void OnLogsClosed(string source)
     {
-        if (_logsWin != null)
+        var win = source == "TX" ? _txLogsWin : _rxLogsWin;
+        if (win != null)
         {
-            App.Store.Settings.LogWinX = _logsWin.Left;
-            App.Store.Settings.LogWinY = _logsWin.Top;
+            var s = App.Store.Settings;
+            if (source == "TX") { s.TxLogWinX = win.Left; s.TxLogWinY = win.Top; _txLogsWin = null; }
+            else { s.LogWinX = win.Left; s.LogWinY = win.Top; _rxLogsWin = null; }
             App.Store.SaveSettings();
-            _logsWin = null;
         }
     }
 
