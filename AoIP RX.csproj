@@ -16,12 +16,12 @@
     <UseWindowsForms>true</UseWindowsForms>
     <VlcWindowsX86Enabled>false</VlcWindowsX86Enabled>
     <VlcWindowsArm64Enabled>false</VlcWindowsArm64Enabled>
-    <ApplicationIcon>AoIP_RX_Icon.ico</ApplicationIcon>
+    <ApplicationIcon>Adoxic_Sound_Icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
-    <Resource Include="Logo.png" />
-    <Resource Include="AoIP_RX_Icon.ico" />
+    <Resource Include="Adoxic_Sound_Logo.png" />
+    <Resource Include="Adoxic_Sound_Icon.ico" />
   </ItemGroup>
 
   <!-- Audio-only VLC diet: drop video/subtitle/stream-out/discovery plugins + video-only codecs -->

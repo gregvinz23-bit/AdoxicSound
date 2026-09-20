@@ -49,12 +49,12 @@ public partial class App : System.Windows.Application
             if (TrayIcon == null)
             {
                 Bitmap? bmp = null;
-                var logo = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logo.png");
+                var logo = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Adoxic_Sound_Logo.png");
                 if (File.Exists(logo)) bmp = new Bitmap(logo);
                 else
                 {
                     var ps = System.Windows.Application.GetResourceStream(
-                        new Uri("pack://application:,,,/Logo.png"))?.Stream;
+                        new Uri("pack://application:,,,/Adoxic_Sound_Logo.png"))?.Stream;
                     if (ps != null) { bmp = new Bitmap(ps); ps.Dispose(); }
                 }
                 if (bmp != null) { TrayIcon = Icon.FromHandle(bmp.GetHicon()); bmp.Dispose(); }

@@ -48,8 +48,8 @@ public partial class MainWindow : Window
         catch (Exception ex) { App.Log.Warn("Window icon failed: " + ex.Message); }
         try
         {
-            var logo = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logo.png");
-            var uri = File.Exists(logo) ? new Uri(logo) : new Uri("pack://application:,,,/Logo.png");
+            var logo = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Adoxic_Sound_Logo.png");
+            var uri = File.Exists(logo) ? new Uri(logo) : new Uri("pack://application:,,,/Adoxic_Sound_Logo.png");
             LogoImage.Source = new BitmapImage(uri);
         }
         catch (Exception ex) { App.Log.Warn("About logo failed: " + ex.Message); }
