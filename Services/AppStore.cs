@@ -16,6 +16,10 @@ public sealed class Settings
     public string? LastUrl { get; set; }
     public double Width { get; set; } = 760;
     public double Height { get; set; } = 540;
+    public double SetWinX { get; set; } = -1;
+    public double SetWinY { get; set; } = -1;
+    public double LogWinX { get; set; } = -1;
+    public double LogWinY { get; set; } = -1;
     public Dictionary<string, UrlStatRecord> UrlStats { get; set; } = new();
 }
 

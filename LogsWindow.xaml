@@ -1,0 +1,25 @@
+<Window x:Class="AoIP_RX.LogsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Logs" Height="420" Width="560" MinWidth="400" MinHeight="280"
+        Background="#F2F2F2" Foreground="#111111" FontFamily="Segoe UI">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+            <ComboBox x:Name="LogFilter" Width="110" SelectionChanged="LogFilter_Changed">
+                <ComboBoxItem Content="All" IsSelected="True"/>
+                <ComboBoxItem Content="INFO"/>
+                <ComboBoxItem Content="WARN"/>
+                <ComboBoxItem Content="ERROR"/>
+            </ComboBox>
+            <CheckBox x:Name="AutoScrollBox" Content="Auto-scroll" IsChecked="True"
+                      VerticalAlignment="Center" Margin="8,0"/>
+            <Button x:Name="ClearButton" Content="Clear" Click="ClearButton_Click"/>
+            <Button x:Name="ExportButton" Content="Export" Click="ExportButton_Click"/>
+        </StackPanel>
+        <ListBox x:Name="LogList" Grid.Row="1" Margin="0,8" FontFamily="Consolas" FontSize="12"/>
+    </Grid>
+</Window>

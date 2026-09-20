@@ -4,6 +4,122 @@
              xmlns:local="clr-namespace:AoIP_RX"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <SolidColorBrush x:Key="BgWindow" Color="#F2F2F2"/>
+        <SolidColorBrush x:Key="BgInput" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="BorderInput" Color="#AAAAAA"/>
+        <SolidColorBrush x:Key="FgMain" Color="#111111"/>
+        <SolidColorBrush x:Key="FgDim" Color="#555555"/>
+        <SolidColorBrush x:Key="Accent" Color="#2AA9E0"/>
+        <SolidColorBrush x:Key="AccentDark" Color="#1A4E8A"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#1A4E8A"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="White"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#777777"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="White"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="#BFE3F5"/>
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource AccentDark}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="14,6"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource BgInput}"/>
+            <Setter Property="Foreground" Value="{DynamicResource FgMain}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderInput}"/>
+            <Setter Property="Padding" Value="8,6"/>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="{DynamicResource BgInput}"/>
+            <Setter Property="Foreground" Value="{DynamicResource FgMain}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderInput}"/>
+        </Style>
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Background" Value="{DynamicResource BgInput}"/>
+            <Setter Property="Foreground" Value="{DynamicResource FgMain}"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource AccentDark}"/>
+                    <Setter Property="Foreground" Value="Black"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource Accent}"/>
+                    <Setter Property="Foreground" Value="Black"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="ListBox">
+            <Setter Property="Background" Value="{DynamicResource BgInput}"/>
+            <Setter Property="Foreground" Value="{DynamicResource FgMain}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderInput}"/>
+        </Style>
+        <Style TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="#111111"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Foreground" Value="Black"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#111111"/>
+        </Style>
+        <Style TargetType="TabItem">
+            <Setter Property="Foreground" Value="#111111"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Padding" Value="14,6"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#BFE3F5"/>
+                    <Setter Property="Foreground" Value="Black"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="{DynamicResource BgWindow}"/>
+        </Style>
+        <Style TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource FgMain}"/>
+            <Setter Property="Margin" Value="4"/>
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{DynamicResource FgMain}"/>
+        </Style>
+        <Style TargetType="Slider">
+            <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+        </Style>
+        <Style x:Key="Toggle" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <StackPanel Orientation="Horizontal">
+                            <Border x:Name="Pill" Width="44" Height="22" CornerRadius="11"
+                                    Background="#444" VerticalAlignment="Center">
+                                <Ellipse x:Name="Knob" Width="16" Height="16" Fill="White"
+                                         HorizontalAlignment="Left" Margin="3,0,0,0"/>
+                            </Border>
+                            <ContentPresenter Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Pill" Property="Background" Value="#2AA9E0"/>
+                                <Setter TargetName="Knob" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="Knob" Property="Margin" Value="0,0,3,0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="Meter" TargetType="ProgressBar">
+            <Setter Property="Height" Value="14"/>
+            <Setter Property="Minimum" Value="0"/>
+            <Setter Property="Maximum" Value="100"/>
+            <Setter Property="Background" Value="#222"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="#3DDC84"/>
+        </Style>
     </Application.Resources>
 </Application>

@@ -1,0 +1,40 @@
+<Window x:Class="AoIP_RX.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Settings" Height="480" Width="400" ResizeMode="NoResize"
+        Background="#F2F2F2" Foreground="#111111" FontFamily="Segoe UI">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="16">
+        <TextBlock Text="Output device" FontWeight="Bold"/>
+        <ComboBox x:Name="SetDeviceCombo" Margin="0,4,0,12"
+                  SelectionChanged="DeviceCombo_SelectionChanged"/>
+        <TextBlock Text="Sample rate" FontWeight="Bold"/>
+        <ComboBox x:Name="RateCombo" Margin="0,4,0,12" SelectionChanged="RateCombo_SelectionChanged">
+            <ComboBoxItem Content="44100 Hz"/>
+            <ComboBoxItem Content="48000 Hz"/>
+            <ComboBoxItem Content="96000 Hz"/>
+        </ComboBox>
+        <CheckBox x:Name="ModeToggle" Content="Stable buffering (off = fast start)" Style="{StaticResource Toggle}"
+                  Margin="0,6" Checked="ModeToggle_Changed" Unchecked="ModeToggle_Changed"/>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,6">
+            <CheckBox x:Name="AlarmToggle" Content="Alarm on silence / drop" Style="{StaticResource Toggle}"
+                      VerticalAlignment="Center" Checked="AlarmToggle_Changed" Unchecked="AlarmToggle_Changed"/>
+            <TextBlock Text="after" VerticalAlignment="Center" Margin="12,0,6,0"/>
+            <ComboBox x:Name="SilenceCombo" Width="80" VerticalAlignment="Center"
+                      SelectionChanged="SilenceCombo_SelectionChanged">
+                <ComboBoxItem Content="10 s"/>
+                <ComboBoxItem Content="15 s"/>
+                <ComboBoxItem Content="30 s"/>
+                <ComboBoxItem Content="60 s"/>
+                <ComboBoxItem Content="120 s"/>
+                <ComboBoxItem Content="300 s"/>
+            </ComboBox>
+        </StackPanel>
+        <CheckBox x:Name="TrayToggle" Content="Minimize to tray on close" Style="{StaticResource Toggle}"
+                  Margin="0,6" Checked="TrayToggle_Changed" Unchecked="TrayToggle_Changed"/>
+        <CheckBox x:Name="BootToggle" Content="Start on system startup" Style="{StaticResource Toggle}"
+                  Margin="0,6" Checked="BootToggle_Changed" Unchecked="BootToggle_Changed"/>
+        <Button Content="Close" Click="Close_Click" Margin="0,16,0,0" HorizontalAlignment="Center" Padding="30,6"/>
+    </StackPanel>
+    </ScrollViewer>
+</Window>
