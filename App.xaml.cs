@@ -107,6 +107,7 @@ public partial class App : System.Windows.Application
     protected override void OnExit(ExitEventArgs e)
     {
         try { Store.SaveSettings(); } catch { }
+        try { Engine.Stop(); } catch { }
         try { Watcher.Dispose(); } catch { }
         try { if (_tray != null) { _tray.Visible = false; _tray.Dispose(); } } catch { }
         try { Engine.Dispose(); } catch { }
