@@ -6,10 +6,10 @@
     <RootNamespace>AdoxicSound</RootNamespace>
     <AssemblyName>AdoxicSound</AssemblyName>
     <Version>1.4.0</Version>
-    <Company>Mantraix Software</Company>
+    <Company>Mantraix Software Solutions</Company>
     <Product>Adoxic Sound</Product>
     <Description>A portable Windows receiver for live MMS and Shoutcast/Icecast radio</Description>
-    <Copyright>� 2026 Mantraix Software. All rights reserved</Copyright>
+    <Copyright>� 2026 Mantraix Software Solutions. All rights reserved</Copyright>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
