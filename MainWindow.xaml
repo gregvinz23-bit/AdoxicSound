@@ -115,17 +115,17 @@
             <TabItem Header="About">
                 <StackPanel MaxWidth="640" HorizontalAlignment="Center" Margin="16"
                             VerticalAlignment="Center" Background="{DynamicResource BgWindow}">
-                    <Image x:Name="LogoImage" Width="110" HorizontalAlignment="Center" Margin="0,0,0,8" RenderOptions.BitmapScalingMode="HighQuality"/>
-                    <TextBlock x:Name="VersionText" Text="Adoxic Sound" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Developed by: Greg Vincent" HorizontalAlignment="Center" Margin="0,4"/>
+                    <Image x:Name="LogoImage" Width="110" HorizontalAlignment="Center" Margin="0,8,0,16" RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <TextBlock x:Name="VersionText" Text="Adoxic Sound" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                    <TextBlock Text="Developed by: Greg Vincent" HorizontalAlignment="Center" Margin="0,0,0,10"/>
                     <TextBlock Text="Description: A portable Windows studio for live internet radio — receive MMS and Shoutcast/Icecast streams with auto-reconnect, or broadcast your microphone to any Icecast/Shoutcast server. Accurate meters, stream health stats, and silent-failure alarms included."
-                               HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                               HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,10"/>
                     <TextBlock Text="© 2026 Mantraix Software Solutions. All rights reserved"
-                               HorizontalAlignment="Center" Margin="0,4" Foreground="{DynamicResource FgDim}"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12">
+                               HorizontalAlignment="Center" Margin="0,0,0,6" Foreground="{DynamicResource FgDim}"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10">
                         <Button x:Name="UpdateButton" Content="Check for updates" Click="UpdateButton_Click"/>
                     </StackPanel>
-                    <TextBlock x:Name="UpdateText" Text="" HorizontalAlignment="Center" Foreground="{DynamicResource FgDim}"/>
+                    <TextBlock x:Name="UpdateText" Text="" HorizontalAlignment="Center" Foreground="{DynamicResource FgDim}" Margin="0,4,0,0"/>
                 </StackPanel>
             </TabItem>
         </TabControl>
