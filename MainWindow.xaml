@@ -118,7 +118,7 @@
                     <Image x:Name="LogoImage" Width="110" HorizontalAlignment="Center" Margin="0,0,0,8" RenderOptions.BitmapScalingMode="HighQuality"/>
                     <TextBlock x:Name="VersionText" Text="Adoxic Sound" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
                     <TextBlock Text="Developed by: Greg Vincent" HorizontalAlignment="Center" Margin="0,4"/>
-                    <TextBlock Text="Description: A portable Windows receiver for live MMS and Shoutcast/Icecast radio — with auto-reconnect, accurate stereo meters, and automatic balance correction."
+                    <TextBlock Text="Description: A portable Windows studio for live internet radio — receive MMS and Shoutcast/Icecast streams with auto-reconnect, or broadcast your microphone to any Icecast/Shoutcast server. Accurate meters, stream health stats, and silent-failure alarms included."
                                HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
                     <TextBlock Text="© 2026 Mantraix Software Solutions. All rights reserved"
                                HorizontalAlignment="Center" Margin="0,4" Foreground="{DynamicResource FgDim}"/>

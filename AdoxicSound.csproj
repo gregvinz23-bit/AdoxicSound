@@ -8,7 +8,7 @@
     <Version>1.4.0</Version>
     <Company>Mantraix Software Solutions</Company>
     <Product>Adoxic Sound</Product>
-    <Description>A portable Windows receiver for live MMS and Shoutcast/Icecast radio</Description>
+    <Description>A portable Windows studio for live internet radio</Description>
     <Copyright>� 2026 Mantraix Software Solutions. All rights reserved</Copyright>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>

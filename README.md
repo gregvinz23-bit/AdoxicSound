@@ -1,5 +1,5 @@
-# AoIP-RX
-Over the Internet Audio Receiver — a portable Windows receiver for live MMS and Shoutcast/Icecast radio, with auto-reconnect, accurate stereo meters, and automatic balance correction.
+# AdoxicSound
+Over the Internet Audio Receiver — a portable Windows studio for live internet radio: receive MMS and Shoutcast/Icecast streams with auto-reconnect, or broadcast your microphone to any Icecast/Shoutcast server.
 
 Developed by Greg Vincent. © 2026 Mantraix Software Solutions. All rights reserved.
 
