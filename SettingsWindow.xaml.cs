@@ -12,7 +12,7 @@ public partial class SettingsWindow : Window
     private readonly MainWindow _main;
     private bool _loading = true;
     private List<(string Id, string Name, bool Default)> _devs = new();
-    private List<(string Id, string Name)> _inputs = new();
+    private List<(string Id, string Name, bool Loopback)> _inputs = new();
     private static readonly int[] SilenceOptions = { 10, 15, 30, 60, 120, 300 };
     private static readonly int[] SendRates = { 64, 96, 128, 160, 320 };
     private static readonly int[] SendCuts = { 0, 5, 15, 30, 60 };
@@ -29,7 +29,7 @@ public partial class SettingsWindow : Window
         ModeToggle.IsChecked = !App.Store.Settings.FastMode;
         AlarmToggle.IsChecked = App.Store.Settings.AlarmEnabled;
         SilenceCombo.SelectedIndex = ClosestSilence(App.Store.Settings.SilenceSeconds);
-        _inputs = new List<(string Id, string Name)>();
+        _inputs = new List<(string Id, string Name, bool Loopback)>();
         RefreshInputs();
         var sp = SendCfg();
         SendRateBox.SelectedIndex = Math.Max(0, Array.IndexOf(SendRates, sp.Bitrate));
@@ -57,10 +57,11 @@ public partial class SettingsWindow : Window
     public void RefreshInputs()
     {
         var keep = SendCfg().InputDeviceId;
+        var keepLoop = SendCfg().InputLoopback;
         _inputs = SendEngine.ListInputs();
         SendInputBox.ItemsSource = _inputs.Select(d => d.Name).ToList();
         if (_inputs.Count == 0) SendInputBox.ItemsSource = new List<string> { "No input found" };
-        var ii = _inputs.FindIndex(d => d.Id == keep);
+        var ii = _inputs.FindIndex(d => d.Id == keep && d.Loopback == keepLoop);
         SendInputBox.SelectedIndex = Math.Max(0, ii);
         if (_inputs.Count == 0) SendInputBox.SelectedIndex = 0;
     }
@@ -169,7 +170,10 @@ public partial class SettingsWindow : Window
     {
         if (_loading || SendInputBox.SelectedIndex < 0) return;
         if (SendInputBox.SelectedIndex < _inputs.Count)
+        {
             SendCfg().InputDeviceId = _inputs[SendInputBox.SelectedIndex].Id;
+            SendCfg().InputLoopback = _inputs[SendInputBox.SelectedIndex].Loopback;
+        }
         App.Store.SaveServers();
     }
 

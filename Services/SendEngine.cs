@@ -21,6 +21,7 @@ public sealed class SendPreset
     public string PassB64 { get; set; } = ""; // lightly obfuscated, local file only
     public int Bitrate { get; set; } = 128;
     public string? InputDeviceId { get; set; }
+    public bool InputLoopback { get; set; } // capture a speaker output instead of a mic
     public int Channels { get; set; } = 0; // 0 auto, 1 mono, 2 stereo
     public int CutoffMin { get; set; } = 0; // 0 off; auto-stop after N silent minutes
     public int ReconnectSec { get; set; } = 4;
@@ -58,15 +59,20 @@ public sealed class SendEngine : IDisposable
 
     public DateTime LastAudibleUtc => _lastAudibleUtc;
 
-    public static List<(string Id, string Name)> ListInputs()
+    public static List<(string Id, string Name, bool Loopback)> ListInputs()
     {
-        var list = new List<(string, string)>();
+        var list = new List<(string, string, bool)>();
         try
         {
             using var e = new MMDeviceEnumerator();
             foreach (var d in e.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active))
             {
-                try { list.Add((d.ID, d.FriendlyName)); d.Dispose(); }
+                try { list.Add((d.ID, d.FriendlyName, false)); d.Dispose(); }
+                catch { }
+            }
+            foreach (var d in e.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active))
+            {
+                try { list.Add((d.ID, d.FriendlyName + " (loopback)", true)); d.Dispose(); }
                 catch { }
             }
         }
@@ -142,7 +148,7 @@ public sealed class SendEngine : IDisposable
         if (c.Type == SendServerType.Icecast2)
         {
             var cred = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{c.User}:{Decode(c.PassB64)}"));
-            var nch = Math.Max(1, Math.Min(2, (await ProbeCaptureChannels(c.InputDeviceId))));
+            var nch = Math.Max(1, Math.Min(2, (await ProbeCaptureChannels(c.InputDeviceId, c.InputLoopback))));
             if (targetCh == 0) targetCh = nch;
             var req = $"PUT {c.Mount} HTTP/1.1\r\nAuthorization: Basic {cred}\r\n" +
                       $"Host: {c.Host}:{c.Port}\r\nUser-Agent: AdoxicSound/{Version}\r\n" +
@@ -175,7 +181,7 @@ public sealed class SendEngine : IDisposable
         }
 
         // capture -> resample 44100/16bit -> MP3 -> socket
-        using var cap = OpenCapture(c.InputDeviceId);
+        using var cap = OpenCapture(c.InputDeviceId, c.InputLoopback);
         var inFmt = cap.WaveFormat;
         int srcCh = Math.Max(1, Math.Min(2, inFmt.Channels));
         if (targetCh < 1 || targetCh > 2) targetCh = srcCh;
@@ -249,25 +255,29 @@ public sealed class SendEngine : IDisposable
         return _userStop;
     }
 
-    private static async Task<int> ProbeCaptureChannels(string? id)
+    private static async Task<int> ProbeCaptureChannels(string? id, bool loopback)
     {
         try
         {
-            using var cap = OpenCapture(id);
+            using var cap = OpenCapture(id, loopback);
             await Task.Delay(150);
             return Math.Max(1, Math.Min(2, cap.WaveFormat.Channels));
         }
         catch { return 2; }
     }
 
-    private static WasapiCapture OpenCapture(string? id)
+    private static WasapiCapture OpenCapture(string? id, bool loopback)
     {
         if (!string.IsNullOrEmpty(id))
         {
-            try { return new WasapiCapture(new MMDeviceEnumerator().GetDevice(id)); }
+            try
+            {
+                var dev = new MMDeviceEnumerator().GetDevice(id);
+                return loopback ? new WasapiLoopbackCapture(dev) : new WasapiCapture(dev);
+            }
             catch { }
         }
-        return new WasapiCapture(); // default input
+        return loopback ? new WasapiLoopbackCapture() : new WasapiCapture();
     }
 
     private void TrackMicPeak(byte[] buf, int bytes, WaveFormat fmt)

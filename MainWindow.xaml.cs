@@ -363,7 +363,9 @@ public partial class MainWindow : Window
     private static SendPreset ClonePreset(SendPreset p) => new()
     {
         Name = p.Name, Type = p.Type, Host = p.Host, Port = p.Port, Mount = p.Mount,
-        User = p.User, PassB64 = p.PassB64, Bitrate = p.Bitrate, InputDeviceId = p.InputDeviceId
+        User = p.User, PassB64 = p.PassB64, Bitrate = p.Bitrate, InputDeviceId = p.InputDeviceId,
+        InputLoopback = p.InputLoopback, Channels = p.Channels, CutoffMin = p.CutoffMin,
+        ReconnectSec = p.ReconnectSec
     };
 
     private void RefreshSend()
