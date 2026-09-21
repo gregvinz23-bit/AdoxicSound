@@ -351,7 +351,13 @@ public partial class MainWindow : Window
 
     private void GoLiveButton_Click(object sender, RoutedEventArgs e)
     {
-        if (App.Send.State != SendState.Stopped) { App.Send.Stop(); return; }
+        if (App.Send.State != SendState.Stopped)
+        {
+            App.Send.Stop();
+            MainTabs_Changed(sender, null!);
+            return;
+        }
+        App.Send.MonitorStop();
         SendField_Changed(sender, e);
         var p = SendCfg();
         if (string.IsNullOrWhiteSpace(p.Host)) { App.Log.Error("Enter the server host first"); return; }
@@ -367,6 +373,18 @@ public partial class MainWindow : Window
         InputLoopback = p.InputLoopback, Channels = p.Channels, CutoffMin = p.CutoffMin,
         ReconnectSec = p.ReconnectSec
     };
+
+    private void MainTabs_Changed(object? sender, SelectionChangedEventArgs? e) => RestartSendMonitor();
+
+    public void RestartSendMonitor()
+    {
+        if (MainTabs.SelectedIndex == 1 && App.Send.State == SendState.Stopped)
+        {
+            var p = SendCfg();
+            App.Send.MonitorStart(p.InputDeviceId, p.InputLoopback);
+        }
+        else App.Send.MonitorStop();
+    }
 
     private void RefreshSend()
     {

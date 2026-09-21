@@ -5,7 +5,8 @@
         Background="#F2F2F2" Foreground="#111111" FontFamily="Segoe UI">
 
     <Grid Background="{DynamicResource BgWindow}">
-        <TabControl Background="{DynamicResource BgWindow}" BorderThickness="0" Margin="0,30,0,0">
+        <TabControl x:Name="MainTabs" Background="{DynamicResource BgWindow}" BorderThickness="0" Margin="0,30,0,0"
+                    SelectionChanged="MainTabs_Changed">
             <!-- ============ STREAM ============ -->
             <TabItem Header="Receive">
                 <StackPanel HorizontalAlignment="Stretch" Margin="16" Background="{DynamicResource BgWindow}">

@@ -175,6 +175,7 @@ public partial class SettingsWindow : Window
             SendCfg().InputLoopback = _inputs[SendInputBox.SelectedIndex].Loopback;
         }
         App.Store.SaveServers();
+        _main.RestartSendMonitor();
     }
 
     private void SendRate_Changed(object sender, SelectionChangedEventArgs e)

@@ -59,6 +59,32 @@ public sealed class SendEngine : IDisposable
 
     public DateTime LastAudibleUtc => _lastAudibleUtc;
 
+    private WasapiCapture? _monitor;
+
+    /// <summary>Lightweight level monitoring without broadcasting.</summary>
+    public void MonitorStart(string? deviceId, bool loopback)
+    {
+        MonitorStop();
+        try
+        {
+            _monitor = OpenCapture(deviceId, loopback);
+            _monitor.DataAvailable += (_, e) =>
+            {
+                try { TrackMicPeak(e.Buffer, e.BytesRecorded, _monitor!.WaveFormat); }
+                catch { }
+            };
+            _monitor.StartRecording();
+        }
+        catch { MonitorStop(); }
+    }
+
+    public void MonitorStop()
+    {
+        try { _monitor?.StopRecording(); } catch { }
+        try { _monitor?.Dispose(); } catch { }
+        _monitor = null;
+    }
+
     public static List<(string Id, string Name, bool Loopback)> ListInputs()
     {
         var list = new List<(string, string, bool)>();
@@ -379,6 +405,7 @@ public sealed class SendEngine : IDisposable
 
     public void Dispose()
     {
+        MonitorStop();
         try { _cts?.Cancel(); } catch { }
         _cts = null;
     }
