@@ -401,7 +401,7 @@ public partial class MainWindow : Window
     // ---------- about / updates ----------
 
     private static string CurrentVersion =>
-        System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.1.0";
+        System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(2) ?? "1.4";
 
     private async void UpdateButton_Click(object sender, RoutedEventArgs e)
     {
