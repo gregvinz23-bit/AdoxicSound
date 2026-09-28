@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using LibVLCSharp.Shared;
 using NAudio.CoreAudioApi;
@@ -10,7 +9,7 @@ public enum EngineState { Stopped, Connecting, Buffering, Playing, Reconnecting 
 
 /// <summary>
 /// Decode with LibVLC (mms + shoutcast/icecast), PCM tap for accurate L/R
-/// meters + auto-balance DSP, output via NAudio WASAPI. Portable.
+/// meters, output via NAudio WASAPI. Portable.
 /// </summary>
 public sealed class StreamEngine : IDisposable
 {
@@ -99,6 +98,7 @@ public sealed class StreamEngine : IDisposable
         _downSince = null;
         _dropReason = null;
         _silenceAlarmed = false;
+        _alarmsToday = 0;
         _lastAudibleUtc = DateTime.UtcNow;
         _cts = new CancellationTokenSource();
         var ct = _cts.Token;
@@ -158,6 +158,7 @@ public sealed class StreamEngine : IDisposable
                 current = "http://" + current[6..];
                 _log.RxWarn($"MMS retry via fallback {current}");
             }
+            var failedOver = false;
             try
             {
                 var ok = await TryOnce(current, ct);
@@ -175,6 +176,7 @@ public sealed class StreamEngine : IDisposable
                         current = next;
                         _url = next;
                         _attempt = 0;
+                        failedOver = true;
                         try { FailoverUI?.Invoke(next); } catch { }
                     }
                 }
@@ -183,8 +185,11 @@ public sealed class StreamEngine : IDisposable
             catch (Exception ex) { _log.RxWarn($"Attempt #{_attempt} error: {ex.Message}"); }
 
             if (_userStop || ct.IsCancellationRequested) return;
-            SetState(EngineState.Reconnecting, $"Reconnecting #{_attempt} in 4s…", DetailText);
-            _log.RxWarn($"Drop detected, retry #{_attempt + 1} in 4s…");
+            if (!failedOver)
+            {
+                SetState(EngineState.Reconnecting, $"Reconnecting #{_attempt} in 4s…", DetailText);
+                _log.RxWarn($"Drop detected, retry #{_attempt + 1} in 4s…");
+            }
             try { await Task.Delay(4000, ct); } catch { return; }
         }
     }
@@ -270,7 +275,7 @@ public sealed class StreamEngine : IDisposable
             var fmt = new WaveFormat(_rate, 16, 2);
             _tap = new BufferedWaveProvider(fmt)
             {
-                BufferDuration = TimeSpan.FromSeconds(5),
+                BufferDuration = TimeSpan.FromSeconds(1),
                 DiscardOnBufferOverflow = true
             };
             _out = new WasapiOut(_device, AudioClientShareMode.Shared, false, 100);
@@ -342,7 +347,6 @@ public sealed class StreamEngine : IDisposable
             if (!_sessionStarted)
             {
                 _sessionStarted = true;
-                _sessionStartUtc = DateTime.UtcNow;
             }
             if (_peakL > 0.0032f || _peakR > 0.0032f) // audible (~-50dB)
             {
@@ -425,7 +429,6 @@ public sealed class StreamEngine : IDisposable
     private string? _meta = "";
     private bool _noOutput;
     private DateTime _lastAudibleUtc = DateTime.UtcNow;
-    private DateTime _sessionStartUtc;
     private bool _sessionStarted;
     private long _healthySec;
     private int _sessionDrops;
@@ -464,7 +467,6 @@ public sealed class StreamEngine : IDisposable
     // ---------- drops, alarms, stats ----------
 
     public int SessionDrops => _sessionDrops;
-    public long SessionHealthySec => _healthySec;
     public long Underruns => _underruns;
     public int AlarmsToday => _alarmsToday;
     public DateTime? DownSince => _downSince;

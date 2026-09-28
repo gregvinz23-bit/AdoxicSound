@@ -47,6 +47,7 @@ public sealed class SendEngine : IDisposable
     public DateTime? LiveSince { get; private set; }
     public int Attempt { get; private set; }
     public string Version { get; set; } = "?";
+    private DateTime _lastDropBalloon = DateTime.MinValue;
 
     public SendEngine(Logger log) => _log = log;
 
@@ -155,6 +156,12 @@ public sealed class SendEngine : IDisposable
             var wait = Math.Clamp(Config.ReconnectSec, 2, 120);
             SetState(SendState.Reconnecting, $"Reconnecting #{Attempt} in {wait}s…");
             _log.TxError($"Push lost — retry #{Attempt + 1} in {wait}s…");
+            if (App.Current is App app && app.Store.Settings.AlarmEnabled &&
+                (DateTime.UtcNow - _lastDropBalloon).TotalMinutes >= 5)
+            {
+                _lastDropBalloon = DateTime.UtcNow;
+                app.NotifyBalloon("Adoxic Sound — push lost", $"{ServerLabel()} — retrying…");
+            }
             try { await Task.Delay(wait * 1000, ct); } catch { return; }
         }
     }

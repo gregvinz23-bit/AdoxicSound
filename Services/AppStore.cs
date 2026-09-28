@@ -13,10 +13,7 @@ public sealed class Settings
     public bool GoLiveOnBoot { get; set; } = false;
     public bool AlarmEnabled { get; set; } = true;
     public int SilenceSeconds { get; set; } = 30;
-    public bool RestoreLast { get; set; } = true;
     public string? LastUrl { get; set; }
-    public double Width { get; set; } = 760;
-    public double Height { get; set; } = 540;
     public double SetWinX { get; set; } = -1;
     public double SetWinY { get; set; } = -1;
     public double LogWinX { get; set; } = -1;
@@ -40,7 +37,6 @@ public sealed class StreamsFile
 public sealed class ServersFile
 {
     public List<SendPreset> Presets { get; set; } = new();
-    public string? LastPreset { get; set; }
 }
 
 /// <summary>Portable store: streams.json + settings.json next to the exe.</summary>

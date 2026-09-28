@@ -117,7 +117,6 @@ public partial class MainWindow : Window
             EngineState.Buffering or EngineState.Connecting or EngineState.Reconnecting => Brushes.Gold,
             _ => Brushes.Gray
         };
-        if (e.State == EngineState.Stopped && StatusText.Text == "Stopped") { }
         PlayStopButton.Content = e.State == EngineState.Stopped ? "▶  STREAM" : "■  STOP";
         PlayStopButton.Background = e.State == EngineState.Stopped
             ? (Brush)new SolidColorBrush(Color.FromRgb(0x2A, 0xA9, 0xE0)) : Brushes.Firebrick;
