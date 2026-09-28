@@ -35,6 +35,7 @@ public sealed class StreamEngine : IDisposable
     private int _cache = 300;
     private long _pcmTicks;
     private int _attempt;
+    private int _failCount;
 
     // meters (linear 0..1 block peak, written by audio thread, consumed by UI)
     private volatile float _peakL, _peakR;
@@ -42,6 +43,9 @@ public sealed class StreamEngine : IDisposable
     // auto-balance removed: meters show the raw source signal
 
     public event Action? StateChanged;
+    public Func<string?>? FailoverProvider;
+    public Action<string>? FailoverUI;
+    public int FailoverAfter { get; set; } = 5;
 
     public EngineState State { get; private set; } = EngineState.Stopped;
     public string StatusText { get; private set; } = "Ready";
@@ -86,6 +90,7 @@ public sealed class StreamEngine : IDisposable
         _userStop = false;
         _url = url.Trim();
         _attempt = 0;
+        _failCount = 0;
         _sessionStarted = false;
         _healthySec = 0;
         _sessionDrops = 0;
@@ -158,6 +163,21 @@ public sealed class StreamEngine : IDisposable
                 var ok = await TryOnce(current, ct);
                 if (ok) return; // played until user stopped
                 RegisterDrop(_dropReason ?? "reconnect");
+                _failCount++;
+                if (_failCount >= FailoverAfter)
+                {
+                    _failCount = 0;
+                    var next = FailoverProvider?.Invoke();
+                    if (!string.IsNullOrWhiteSpace(next) &&
+                        !next.Equals(current, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _log.RxWarn($"Giving up on {ShortUrl()} after {FailoverAfter} tries — failing over");
+                        current = next;
+                        _url = next;
+                        _attempt = 0;
+                        try { FailoverUI?.Invoke(next); } catch { }
+                    }
+                }
             }
             catch (OperationCanceledException) { return; }
             catch (Exception ex) { _log.RxWarn($"Attempt #{_attempt} error: {ex.Message}"); }
@@ -204,6 +224,7 @@ public sealed class StreamEngine : IDisposable
         SetState(EngineState.Playing, "Playing", "");
         RefreshTrackInfo();
         _log.RxInfo("Playing: " + DetailText);
+        _failCount = 0;
         NoteRecovered();
 
         // health watchdog, 1s tick: stall => reconnect, silence => alarm

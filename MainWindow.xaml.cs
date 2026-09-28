@@ -63,6 +63,8 @@ public partial class MainWindow : Window
         }
 
         App.Engine.StateChanged += () => Dispatcher.BeginInvoke(RefreshState);
+        App.Engine.FailoverProvider += PickNextStream;
+        App.Engine.FailoverUI += url => Dispatcher.BeginInvoke(() => ShowFailover(url));
         App.Send.StateChanged += () => Dispatcher.BeginInvoke(RefreshSend);
         InitSendTab();
         if (App.Store.Settings.GoLiveOnBoot)
@@ -191,9 +193,27 @@ public partial class MainWindow : Window
         if (StreamList.SelectedItem is string s) UrlBox.Text = s;
     }
 
+    private string? PickNextStream()
+    {
+        if (_streams.Count < 2) return null;
+        var cur = App.Engine.CurrentUrl;
+        var i = _streams.ToList().FindIndex(u => u.Equals(cur, StringComparison.OrdinalIgnoreCase));
+        return _streams[(i + 1) % _streams.Count];
+    }
+
     private void SelectStream(string url)
     {
         if (_streams.Contains(url)) StreamList.SelectedItem = url;
+    }
+
+    private void ShowFailover(string url)
+    {
+        UrlBox.Text = url;
+        SelectStream(url);
+        App.Store.Settings.LastUrl = url;
+        App.Store.SaveSettings();
+        App.Log.Warn("Failed over to: " + url);
+        RefreshState();
     }
 
     // ---------- child windows ----------
