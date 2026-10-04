@@ -11,6 +11,8 @@ public sealed class Settings
     public bool TrayOnClose { get; set; } = true;
     public bool StartOnBoot { get; set; } = false;
     public bool GoLiveOnBoot { get; set; } = false;
+    public bool ListenDirect { get; set; } = false;
+    public int DirectPort { get; set; } = 9000;
     public bool AlarmEnabled { get; set; } = true;
     public int SilenceSeconds { get; set; } = 30;
     public string? LastUrl { get; set; }
@@ -81,6 +83,7 @@ public sealed class AppStore
         Servers.Presets ??= new();
         if (Settings.SampleRate is not (44100 or 48000 or 96000)) Settings.SampleRate = 48000;
         if (Settings.SilenceSeconds < 10 || Settings.SilenceSeconds > 300) Settings.SilenceSeconds = 30;
+        if (Settings.DirectPort < 1 || Settings.DirectPort > 65535) Settings.DirectPort = 9000;
         Settings.UrlStats ??= new();
     }
 

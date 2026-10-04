@@ -40,6 +40,8 @@ public partial class SettingsWindow : Window
         GoLiveBootToggle.IsChecked = App.Store.Settings.GoLiveOnBoot;
         TrayToggle.IsChecked = App.Store.Settings.TrayOnClose;
         BootToggle.IsChecked = App.Store.Settings.StartOnBoot;
+        ListenToggle.IsChecked = App.Store.Settings.ListenDirect;
+        DirectPortBox.Text = App.Store.Settings.DirectPort.ToString();
         App.Watcher.DevicesChanged += Watcher_Devices;
         App.Watcher.DeviceRemoved += Watcher_Removed;
         Closed += (_, _) =>
@@ -214,6 +216,26 @@ public partial class SettingsWindow : Window
         App.Store.Settings.GoLiveOnBoot = GoLiveBootToggle.IsChecked == true;
         App.Store.SaveSettings();
         App.Log.Info("Go live on startup " + (App.Store.Settings.GoLiveOnBoot ? "ON" : "OFF"));
+    }
+
+    private void ListenToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        App.Store.Settings.ListenDirect = ListenToggle.IsChecked == true;
+        App.Store.SaveSettings();
+        App.ApplyListen();
+        App.Log.Info("Direct listen " + (App.Store.Settings.ListenDirect ? $"ON :{App.Store.Settings.DirectPort}" : "OFF"));
+    }
+
+    private void DirectPort_Changed(object sender, TextChangedEventArgs e)
+    {
+        if (_loading) return;
+        if (int.TryParse(DirectPortBox.Text.Trim(), out var p))
+        {
+            App.Store.Settings.DirectPort = Math.Clamp(p, 1, 65535);
+            App.Store.SaveSettings();
+            if (App.Store.Settings.ListenDirect) App.ApplyListen();
+        }
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();

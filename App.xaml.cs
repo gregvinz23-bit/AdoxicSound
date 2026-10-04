@@ -16,6 +16,7 @@ public partial class App : System.Windows.Application
     public Logger Log { get; private set; } = null!;
     public StreamEngine Engine { get; private set; } = null!;
     public SendEngine Send { get; private set; } = null!;
+    public DirectListener Direct { get; private set; } = null!;
     public DeviceWatcher Watcher { get; private set; } = null!;
     public Icon? TrayIcon { get; private set; }
     public string PendingUrl { get; private set; } = "";
@@ -30,6 +31,8 @@ public partial class App : System.Windows.Application
         Log = new Logger();
         Engine = new StreamEngine(Log);
         Send = new SendEngine(Log);
+        Direct = new DirectListener(Log);
+        ApplyListen();
         Engine.Configure(Store.Settings.SampleRate, Store.Settings.FastMode);
         ApplyStartOnBoot();
         SetupTray();
@@ -91,6 +94,16 @@ public partial class App : System.Windows.Application
         w.Activate();
     }
 
+    public void ApplyListen()
+    {
+        try
+        {
+            if (Store.Settings.ListenDirect) Direct.Start(Store.Settings.DirectPort);
+            else Direct.Stop();
+        }
+        catch (Exception ex) { Log.Warn("Direct listen failed: " + ex.Message); }
+    }
+
     public void ApplyStartOnBoot()
     {
         try
@@ -117,6 +130,7 @@ public partial class App : System.Windows.Application
         try { Store.SaveSettings(); } catch { }
         try { Engine.Stop(); } catch { }
         try { Send.Stop(silent: true); } catch { }
+        try { Direct.Dispose(); } catch { }
         try { Watcher.Dispose(); } catch { }
         try { if (_tray != null) { _tray.Visible = false; _tray.Dispose(); } } catch { }
         try { Engine.Dispose(); } catch { }

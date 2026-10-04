@@ -88,6 +88,9 @@ public partial class MainWindow : Window
         App.Watcher.DeviceAdded += () => Dispatcher.BeginInvoke(() => App.Log.Info("Audio device added"));
         App.Watcher.DeviceRemoved += id => Dispatcher.BeginInvoke(() => OnDeviceLost(id));
         App.Watcher.DevicesChanged += () => Dispatcher.BeginInvoke(() => { _settingsWin?.RefreshDevices(); _settingsWin?.RefreshInputs(); });
+        App.Direct.CanAccept = () => App.Engine.State == EngineState.Stopped;
+        App.Direct.DirectConnected += ip => Dispatcher.BeginInvoke(() => OnDirectConnected(ip));
+        App.Direct.DirectEnded += () => Dispatcher.BeginInvoke(OnDirectEnded);
 
         Closing += MainWindow_Closing;
         Closed += (_, _) => { _meterTimer.Stop(); _slowTimer.Stop(); };
@@ -291,11 +294,31 @@ public partial class MainWindow : Window
 
     // ---------- devices ----------
 
+    private string? _directRelayUrl;
+
     public void OnDeviceLost(string id)
     {
         App.Log.Warn("Audio device removed");
         App.Engine.OnOutputLost(id);
         _settingsWin?.RefreshDevices();
+        RefreshState();
+    }
+
+    private void OnDirectConnected(string ip)
+    {
+        var relay = App.Direct.RelayUrl;
+        if (string.IsNullOrEmpty(relay) || App.Engine.State != EngineState.Stopped) return;
+        _directRelayUrl = relay;
+        App.Log.Warn($"Direct sender {ip} — playing");
+        App.Engine.Configure(App.Store.Settings.SampleRate, App.Store.Settings.FastMode);
+        App.Engine.Play(relay);
+    }
+
+    private void OnDirectEnded()
+    {
+        if (!string.IsNullOrEmpty(_directRelayUrl) && App.Engine.CurrentUrl == _directRelayUrl)
+            App.Engine.Stop();
+        _directRelayUrl = null;
         RefreshState();
     }
 
@@ -379,8 +402,8 @@ public partial class MainWindow : Window
         App.Send.MonitorStop();
         SendField_Changed(sender, e);
         var p = SendCfg();
-        if (string.IsNullOrWhiteSpace(p.Host)) { App.Log.Error("Enter the server host first"); return; }
-        if (string.IsNullOrEmpty(DecodeB64(p.PassB64))) { App.Log.Error("Enter the server password first"); return; }
+        if (string.IsNullOrWhiteSpace(p.Host)) { App.Log.Error("Enter the destination host first"); return; }
+        if (p.Type != SendServerType.Direct && string.IsNullOrEmpty(DecodeB64(p.PassB64))) { App.Log.Error("Enter the server password first"); return; }
         App.Send.Version = CurrentVersion;
         App.Send.Start(ClonePreset(p));
     }

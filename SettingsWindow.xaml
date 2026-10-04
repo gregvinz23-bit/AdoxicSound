@@ -34,8 +34,14 @@
                 </StackPanel>
                 <CheckBox x:Name="TrayToggle" Content="Minimize to tray on close" Style="{StaticResource Toggle}"
                           Margin="0,6" Checked="TrayToggle_Changed" Unchecked="TrayToggle_Changed"/>
-                <CheckBox x:Name="BootToggle" Content="Start on system startup" Style="{StaticResource Toggle}"
-                          Margin="0,6" Checked="BootToggle_Changed" Unchecked="BootToggle_Changed"/>
+                    <CheckBox x:Name="BootToggle" Content="Start on system startup" Style="{StaticResource Toggle}"
+                              Margin="0,6" Checked="BootToggle_Changed" Unchecked="BootToggle_Changed"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,6">
+                        <CheckBox x:Name="ListenToggle" Content="Listen for direct pushes" Style="{StaticResource Toggle}"
+                                  VerticalAlignment="Center" Checked="ListenToggle_Changed" Unchecked="ListenToggle_Changed"/>
+                        <TextBlock Text="port" VerticalAlignment="Center" Margin="12,0,6,0"/>
+                        <TextBox x:Name="DirectPortBox" Width="70" VerticalAlignment="Center" TextChanged="DirectPort_Changed"/>
+                    </StackPanel>
             </StackPanel>
         </TabItem>
         <TabItem Header="Send">

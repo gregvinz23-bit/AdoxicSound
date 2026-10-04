@@ -82,6 +82,7 @@
                             <ComboBoxItem Content="Icecast 2"/>
                             <ComboBoxItem Content="Shoutcast v2"/>
                             <ComboBoxItem Content="Shoutcast v1"/>
+                            <ComboBoxItem Content="Direct (no server)"/>
                         </ComboBox>
                         <TextBlock Text="Host" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"/>
                         <TextBox x:Name="SendHost" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Margin="0,2" TextChanged="SendField_Changed"/>
