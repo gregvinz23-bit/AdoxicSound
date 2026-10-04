@@ -7,7 +7,7 @@ using NAudio.Wave;
 
 namespace AdoxicSound.Services;
 
-public enum SendServerType { Icecast2, ShoutcastV2, ShoutcastV1, Direct }
+public enum SendServerType { Icecast2, ShoutcastV2, ShoutcastV1 }
 public enum SendState { Stopped, Connecting, Live, Reconnecting }
 
 public sealed class SendPreset
@@ -178,13 +178,7 @@ public sealed class SendEngine : IDisposable
         stream.WriteTimeout = 10000;
         stream.ReadTimeout = 10000;
 
-        if (c.Type == SendServerType.Direct)
-        {
-            // no server: magic + version, then raw MP3; listener validates
-            await stream.WriteAsync(new byte[] { (byte)'A', (byte)'D', (byte)'X', (byte)'M', 1 }, ct);
-            _log.TxInfo($"Direct push to {c.Host}:{c.Port}");
-        }
-        else if (c.Type == SendServerType.Icecast2)
+        if (c.Type == SendServerType.Icecast2)
         {
             var cred = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{c.User}:{Decode(c.PassB64)}"));
             var nch = Math.Max(1, Math.Min(2, (await ProbeCaptureChannels(c.InputDeviceId, c.InputLoopback))));
