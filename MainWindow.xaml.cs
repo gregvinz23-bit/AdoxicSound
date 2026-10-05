@@ -20,7 +20,7 @@ namespace AdoxicSound;
 public partial class MainWindow : Window
 {
     private App App => (App)Application.Current;
-    private readonly ObservableCollection<string> _streams = new();
+    private readonly ObservableCollection<StreamEntry> _streams = new();
     private readonly DispatcherTimer _meterTimer = new();
     private readonly DispatcherTimer _slowTimer = new();
     private float _dispL, _dispR;
@@ -187,16 +187,20 @@ public partial class MainWindow : Window
     {
         var url = UrlBox.Text.Trim();
         if (url.Length < 8 || (!url.Contains("://"))) { App.Log.Error("Enter a stream link first"); return; }
-        if (_streams.Contains(url)) return;
-        _streams.Add(url);
-        App.Store.Streams.Urls.Add(url);
+        if (_streams.Any(x => x.Url == url)) return;
+        var name = NameBox.Text.Trim();
+        if (string.IsNullOrEmpty(name)) name = url;
+        var entry = new StreamEntry { Name = name, Url = url };
+        _streams.Add(entry);
+        App.Store.Streams.Urls.Add(entry);
         App.Store.SaveStreams();
-        App.Log.Info("Added: " + url);
+        NameBox.Text = "";
+        App.Log.Info($"Added {name}: " + url);
     }
 
     private void RemoveButton_Click(object sender, RoutedEventArgs e)
     {
-        if (StreamList.SelectedItem is not string s) return;
+        if (StreamList.SelectedItem is not StreamEntry s) return;
         _streams.Remove(s);
         App.Store.Streams.Urls.Remove(s);
         App.Store.SaveStreams();
@@ -204,20 +208,25 @@ public partial class MainWindow : Window
 
     private void StreamList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (StreamList.SelectedItem is string s) UrlBox.Text = s;
+        if (StreamList.SelectedItem is StreamEntry s)
+        {
+            UrlBox.Text = s.Url;
+            NameBox.Text = s.Name == s.Url ? "" : s.Name;
+        }
     }
 
     private string? PickNextStream()
     {
         if (_streams.Count < 2) return null;
         var cur = App.Engine.CurrentUrl;
-        var i = _streams.ToList().FindIndex(u => u.Equals(cur, StringComparison.OrdinalIgnoreCase));
-        return _streams[(i + 1) % _streams.Count];
+        var i = _streams.ToList().FindIndex(u => u.Url.Equals(cur, StringComparison.OrdinalIgnoreCase));
+        return _streams[(i + 1) % _streams.Count].Url;
     }
 
     private void SelectStream(string url)
     {
-        if (_streams.Contains(url)) StreamList.SelectedItem = url;
+        var found = _streams.FirstOrDefault(x => x.Url == url);
+        if (found != null) StreamList.SelectedItem = found;
     }
 
     private void ShowFailover(string url)

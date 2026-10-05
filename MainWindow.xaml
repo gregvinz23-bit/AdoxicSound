@@ -19,11 +19,13 @@
 
                     <TextBox x:Name="UrlBox" Text="mms://" Margin="0,4"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="Name:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBox x:Name="NameBox" Width="150" Margin="0,0,4,0"/>
                         <Button x:Name="AddButton" Content="+ Add" Click="AddButton_Click"/>
                         <Button x:Name="RemoveButton" Content="Remove" Click="RemoveButton_Click"/>
                         <Button x:Name="LogsButton" Content="Logs" Click="LogsButton_Click"/>
                     </StackPanel>
-                    <ListBox x:Name="StreamList" Height="90" Margin="0,4"
+                    <ListBox x:Name="StreamList" Height="90" Margin="0,4" DisplayMemberPath="Name"
                              SelectionChanged="StreamList_SelectionChanged"/>
 
                     <Button x:Name="PlayStopButton" Content="▶  STREAM" FontSize="16" Padding="14,10"

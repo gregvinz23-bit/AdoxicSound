@@ -36,9 +36,15 @@ public sealed class UrlStatRecord
     public long HealthySec { get; set; }
 }
 
+public sealed class StreamEntry
+{
+    public string Name { get; set; } = "";
+    public string Url { get; set; } = "";
+}
+
 public sealed class StreamsFile
 {
-    public List<string> Urls { get; set; } = new();
+    public List<StreamEntry> Urls { get; set; } = new();
 }
 
 public sealed class ServersFile
@@ -62,6 +68,21 @@ public sealed class AppStore
         Load();
     }
 
+    private static string GuessName(string url)
+    {
+        try
+        {
+            var u = new Uri(url);
+            return u.Host + (u.IsDefaultPort ? "" : ":" + u.Port) + (u.AbsolutePath == "/" ? "" : u.AbsolutePath);
+        }
+        catch { return url; }
+    }
+
+    private sealed class LegacyStreams
+    {
+        public List<string>? Urls { get; set; }
+    }
+
     private void Load()
     {
         try
@@ -75,7 +96,22 @@ public sealed class AppStore
         {
             var p = Path.Combine(_base, "streams.json");
             if (File.Exists(p))
-                Streams = JsonSerializer.Deserialize<StreamsFile>(File.ReadAllText(p)) ?? new();
+            {
+                var raw = File.ReadAllText(p);
+                try
+                {
+                    Streams = JsonSerializer.Deserialize<StreamsFile>(raw) ?? new();
+                }
+                catch
+                {
+                    // legacy format: plain URL strings
+                    var old = JsonSerializer.Deserialize<LegacyStreams>(raw);
+                    if (old?.Urls != null)
+                        foreach (var u in old.Urls)
+                            Streams.Urls.Add(new StreamEntry { Name = GuessName(u), Url = u });
+                }
+                Streams.Urls ??= new();
+            }
         }
         catch { }
         try
