@@ -18,6 +18,7 @@ public sealed class Settings
     public bool RecLoopback { get; set; }
     public int RecFormat { get; set; } = 0;
     public int RecRate { get; set; } = 128;
+    public bool RecAutoStart { get; set; } = false;
     public string? LastUrl { get; set; }
     public double SetWinX { get; set; } = -1;
     public double SetWinY { get; set; } = -1;

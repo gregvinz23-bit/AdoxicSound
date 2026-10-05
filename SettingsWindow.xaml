@@ -97,6 +97,8 @@
                 </StackPanel>
                 <TextBlock Text="Empty folder = portable records\ next to the app."
                            Foreground="{DynamicResource FgDim}" TextWrapping="Wrap"/>
+                <CheckBox x:Name="RecAutoToggle" Content="Auto record at startup" Style="{StaticResource Toggle}"
+                          Margin="0,6" Checked="RecAuto_Changed" Unchecked="RecAuto_Changed"/>
             </StackPanel>
         </TabItem>
     </TabControl>

@@ -40,6 +40,7 @@ public partial class SettingsWindow : Window
         SendCutBox.SelectedIndex = Math.Max(0, Array.IndexOf(SendCuts, sp.CutoffMin));
         SendRetryBox.SelectedIndex = Math.Max(0, Array.IndexOf(SendRetries, sp.ReconnectSec));
         GoLiveBootToggle.IsChecked = App.Store.Settings.GoLiveOnBoot;
+        RecAutoToggle.IsChecked = App.Store.Settings.RecAutoStart;
         InitRecSettings();
         TrayToggle.IsChecked = App.Store.Settings.TrayOnClose;
         BootToggle.IsChecked = App.Store.Settings.StartOnBoot;
@@ -217,6 +218,14 @@ public partial class SettingsWindow : Window
         App.Store.Settings.GoLiveOnBoot = GoLiveBootToggle.IsChecked == true;
         App.Store.SaveSettings();
         App.Log.Info("Go live on startup " + (App.Store.Settings.GoLiveOnBoot ? "ON" : "OFF"));
+    }
+
+    private void RecAuto_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        App.Store.Settings.RecAutoStart = RecAutoToggle.IsChecked == true;
+        App.Store.SaveSettings();
+        App.Log.Info("Auto record at startup " + (App.Store.Settings.RecAutoStart ? "ON" : "OFF"));
     }
 
     private void InitRecSettings()

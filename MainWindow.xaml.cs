@@ -67,6 +67,18 @@ public partial class MainWindow : Window
         App.Engine.FailoverUI += url => Dispatcher.BeginInvoke(() => ShowFailover(url));
         App.Send.StateChanged += () => Dispatcher.BeginInvoke(RefreshSend);
         InitSendTab();
+        if (App.Store.Settings.RecAutoStart)
+        {
+            var rs = App.Store.Settings;
+            var rec = App.Rec;
+            rec.Folder = rs.RecFolder;
+            rec.Format = (RecordFormat)Math.Max(0, Math.Min(2, rs.RecFormat));
+            rec.Bitrate = rs.RecRate;
+            rec.InputDeviceId = rs.RecInputId;
+            rec.InputLoopback = rs.RecLoopback;
+            rec.Start();
+            App.Log.Info("Auto record on startup");
+        }
         App.Rec.StateChanged += () => Dispatcher.BeginInvoke(() => { RefreshRec(); RefreshRecFiles(); });
         RefreshRecFiles();
         if (App.Store.Settings.GoLiveOnBoot)
