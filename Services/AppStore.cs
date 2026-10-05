@@ -68,7 +68,7 @@ public sealed class AppStore
         Load();
     }
 
-    private static string GuessName(string url)
+    internal static string GuessName(string url)
     {
         try
         {

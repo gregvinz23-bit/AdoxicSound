@@ -188,14 +188,11 @@ public partial class MainWindow : Window
         var url = UrlBox.Text.Trim();
         if (url.Length < 8 || (!url.Contains("://"))) { App.Log.Error("Enter a stream link first"); return; }
         if (_streams.Any(x => x.Url == url)) return;
-        var name = NameBox.Text.Trim();
-        if (string.IsNullOrEmpty(name)) name = url;
-        var entry = new StreamEntry { Name = name, Url = url };
+        var entry = new StreamEntry { Name = AppStore.GuessName(url), Url = url };
         _streams.Add(entry);
         App.Store.Streams.Urls.Add(entry);
         App.Store.SaveStreams();
-        NameBox.Text = "";
-        App.Log.Info($"Added {name}: " + url);
+        App.Log.Info($"Added {entry.Name}: " + url);
     }
 
     private void RemoveButton_Click(object sender, RoutedEventArgs e)
@@ -208,11 +205,7 @@ public partial class MainWindow : Window
 
     private void StreamList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (StreamList.SelectedItem is StreamEntry s)
-        {
-            UrlBox.Text = s.Url;
-            NameBox.Text = s.Name == s.Url ? "" : s.Name;
-        }
+        if (StreamList.SelectedItem is StreamEntry s) UrlBox.Text = s.Url;
     }
 
     private string? PickNextStream()
