@@ -456,21 +456,6 @@ public partial class MainWindow : Window
 
     // ---------- record tab ----------
 
-    private EditorWindow? _editorWin;
-
-    private void RecEditor_Click(object sender, RoutedEventArgs e)
-    {
-        if (_editorWin == null)
-        {
-            _editorWin = new EditorWindow(this);
-            _editorWin.ShowInTaskbar = false;
-        }
-        _editorWin.Show();
-        _editorWin.Activate();
-    }
-
-    public void OnEditorClosed() => _editorWin = null;
-
     private void RecOpenFolder_Click(object sender, RoutedEventArgs e)
     {
         try

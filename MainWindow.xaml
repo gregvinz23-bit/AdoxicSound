@@ -125,7 +125,6 @@
                             Background="#2AA9E0" Click="RecButton_Click" Margin="0,8"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                         <Button x:Name="RecOpenFolder" Content="Open folder" Click="RecOpenFolder_Click"/>
-                        <Button x:Name="RecEditor" Content="Audio Editor" Click="RecEditor_Click"/>
                     </StackPanel>
                     <ListBox x:Name="RecFiles" Height="80" Margin="0,4"/>
                 </StackPanel>
