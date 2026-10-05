@@ -1,0 +1,11 @@
+<Window x:Class="AdoxicSound.EditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Audio Editor" Height="420" Width="640" MinWidth="480" MinHeight="300"
+        Background="#F2F2F2" Foreground="#111111" FontFamily="Segoe UI">
+    <Grid Margin="16">
+        <TextBlock Text="Audio editor — coming soon. Waveform, trim and save land here."
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   TextWrapping="Wrap" TextAlignment="Center" FontSize="14"/>
+    </Grid>
+</Window>
