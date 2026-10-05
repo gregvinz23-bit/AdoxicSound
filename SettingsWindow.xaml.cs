@@ -17,6 +17,7 @@ public partial class SettingsWindow : Window
     private static readonly int[] SendRates = { 64, 96, 128, 160, 320 };
     private static readonly int[] RecRates = { 64, 96, 128, 160, 320 };
     private List<(string Id, string Name, bool Loopback)> _recInputs = new();
+    private static readonly int[] RecSplits = { 20, 30, 60, 0 };
     private static readonly int[] SendCuts = { 0, 5, 15, 30, 60 };
     private static readonly int[] SendRetries = { 4, 10, 30 };
 
@@ -41,6 +42,8 @@ public partial class SettingsWindow : Window
         SendRetryBox.SelectedIndex = Math.Max(0, Array.IndexOf(SendRetries, sp.ReconnectSec));
         GoLiveBootToggle.IsChecked = App.Store.Settings.GoLiveOnBoot;
         RecAutoToggle.IsChecked = App.Store.Settings.RecAutoStart;
+        RecSplitBox.SelectedIndex = Math.Max(0, Array.IndexOf(RecSplits, App.Store.Settings.RecSplitMin));
+        if (RecSplitBox.SelectedIndex < 0) RecSplitBox.SelectedIndex = 2;
         InitRecSettings();
         TrayToggle.IsChecked = App.Store.Settings.TrayOnClose;
         BootToggle.IsChecked = App.Store.Settings.StartOnBoot;
@@ -226,6 +229,16 @@ public partial class SettingsWindow : Window
         App.Store.Settings.RecAutoStart = RecAutoToggle.IsChecked == true;
         App.Store.SaveSettings();
         App.Log.Info("Auto record at startup " + (App.Store.Settings.RecAutoStart ? "ON" : "OFF"));
+    }
+
+    private void RecSplit_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || RecSplitBox.SelectedIndex < 0) return;
+        App.Store.Settings.RecSplitMin = RecSplits[RecSplitBox.SelectedIndex];
+        App.Store.SaveSettings();
+        var v = App.Store.Settings.RecSplitMin;
+        App.Log.Info("Record split: " + (v <= 0 ? "OFF (one file per session)" : $"every {v} min"));
+        if (v <= 0) App.Log.Warn("Split disabled — a crash loses the whole session file");
     }
 
     private void InitRecSettings()

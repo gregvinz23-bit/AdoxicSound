@@ -97,6 +97,13 @@
                 </StackPanel>
                 <TextBlock Text="Empty folder = portable records\ next to the app."
                            Foreground="{DynamicResource FgDim}" TextWrapping="Wrap"/>
+                <TextBlock Text="Split every" FontWeight="Bold" Margin="0,6,0,0"/>
+                <ComboBox x:Name="RecSplitBox" Margin="0,4,0,0" SelectionChanged="RecSplit_Changed">
+                    <ComboBoxItem Content="20 minutes"/>
+                    <ComboBoxItem Content="30 minutes"/>
+                    <ComboBoxItem Content="60 minutes"/>
+                    <ComboBoxItem Content="Off (one file per session)"/>
+                </ComboBox>
                 <CheckBox x:Name="RecAutoToggle" Content="Auto record at startup" Style="{StaticResource Toggle}"
                           Margin="0,6" Checked="RecAuto_Changed" Unchecked="RecAuto_Changed"/>
             </StackPanel>

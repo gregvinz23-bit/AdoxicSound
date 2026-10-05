@@ -54,6 +54,7 @@ public sealed class RecordEngine : IDisposable
     public string Folder { get; set; } = "";
     public RecordFormat Format { get; set; } = RecordFormat.Mp3;
     public int Bitrate { get; set; } = 128;
+    public int SplitMin { get; set; } = 60; // 0 = off
     public string? InputDeviceId { get; set; }
     public bool InputLoopback { get; set; }
 
@@ -191,9 +192,10 @@ public sealed class RecordEngine : IDisposable
             while (!ct.IsCancellationRequested && State == RecordState.Recording)
             {
                 await Task.Delay(TimeSpan.FromMinutes(1), ct);
-                if (DateTime.UtcNow - _fileStartUtc < TimeSpan.FromHours(1)) continue;
+                if (SplitMin <= 0) continue;
+                if (DateTime.UtcNow - _fileStartUtc < TimeSpan.FromMinutes(SplitMin)) continue;
                 var folder = Path.GetDirectoryName(_currentPath) ?? ".";
-                _log.Info("Hourly split: " + Path.GetFileName(_currentPath));
+                _log.Info($"Split ({SplitMin}m): " + Path.GetFileName(_currentPath));
                 var fmt = _resampler?.WaveFormat;
                 CloseEncoder();
                 OpenFile(folder);

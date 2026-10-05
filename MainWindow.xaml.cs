@@ -74,6 +74,7 @@ public partial class MainWindow : Window
             rec.Folder = rs.RecFolder;
             rec.Format = (RecordFormat)Math.Max(0, Math.Min(2, rs.RecFormat));
             rec.Bitrate = rs.RecRate;
+            rec.SplitMin = rs.RecSplitMin;
             rec.InputDeviceId = rs.RecInputId;
             rec.InputLoopback = rs.RecLoopback;
             rec.Start();
@@ -471,8 +472,9 @@ public partial class MainWindow : Window
         var s = App.Store.Settings;
         var rec = App.Rec;
         rec.Folder = s.RecFolder;
-        rec.Format = (RecordFormat)Math.Max(0, s.RecFormat);
+        rec.Format = (RecordFormat)Math.Max(0, Math.Min(2, s.RecFormat));
         rec.Bitrate = s.RecRate;
+        rec.SplitMin = s.RecSplitMin;
         rec.InputDeviceId = s.RecInputId;
         rec.InputLoopback = s.RecLoopback;
         rec.Start();
