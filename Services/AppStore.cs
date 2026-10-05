@@ -13,6 +13,11 @@ public sealed class Settings
     public bool GoLiveOnBoot { get; set; } = false;
     public bool AlarmEnabled { get; set; } = true;
     public int SilenceSeconds { get; set; } = 30;
+    public string RecFolder { get; set; } = "";
+    public string? RecInputId { get; set; }
+    public bool RecLoopback { get; set; }
+    public int RecFormat { get; set; } = 0;
+    public int RecRate { get; set; } = 128;
     public string? LastUrl { get; set; }
     public double SetWinX { get; set; } = -1;
     public double SetWinY { get; set; } = -1;

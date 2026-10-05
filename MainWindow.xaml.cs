@@ -67,6 +67,7 @@ public partial class MainWindow : Window
         App.Engine.FailoverUI += url => Dispatcher.BeginInvoke(() => ShowFailover(url));
         App.Send.StateChanged += () => Dispatcher.BeginInvoke(RefreshSend);
         InitSendTab();
+        InitRecTab();
         if (App.Store.Settings.GoLiveOnBoot)
         {
             var sp = SendCfg();
@@ -82,7 +83,7 @@ public partial class MainWindow : Window
         _meterTimer.Tick += (_, _) => RefreshMeters();
         _meterTimer.Start();
         _slowTimer.Interval = TimeSpan.FromSeconds(1);
-        _slowTimer.Tick += (_, _) => { RefreshState(); RefreshStats(); RefreshSend(); CheckSendSilence(); };
+        _slowTimer.Tick += (_, _) => { RefreshState(); RefreshStats(); RefreshSend(); CheckSendSilence(); RefreshRec(); };
         _slowTimer.Start();
 
         App.Watcher.DeviceAdded += () => Dispatcher.BeginInvoke(() => App.Log.Info("Audio device added"));
@@ -435,6 +436,100 @@ public partial class MainWindow : Window
         _sendSilenceAlarmed = true;
         App.Log.Error($"Mic silent {(int)quietFor}s — nothing going out");
         App.NotifyBalloon("Adoxic Sound — mic silent", $"No input for {(int)quietFor}s");
+    }
+
+    // ---------- record tab ----------
+
+    private bool _recLoading = true;
+    private static readonly int[] RecRates = { 64, 96, 128, 160, 320 };
+    private List<(string Id, string Name, bool Loopback)> _recInputs = new();
+
+    private void InitRecTab()
+    {
+        _recInputs = SendEngine.ListInputs();
+        RecInputBox.ItemsSource = _recInputs.Select(d => d.Name).ToList();
+        if (_recInputs.Count == 0) RecInputBox.ItemsSource = new List<string> { "No input found" };
+        var s = App.Store.Settings;
+        _recLoading = true;
+        RecFormatBox.SelectedIndex = s.RecFormat;
+        if (!RecordEngine.AacAvailable) RecAacItem.IsEnabled = false;
+        RecRateBox.SelectedIndex = Math.Max(0, Array.IndexOf(RecRates, s.RecRate));
+        if (RecRateBox.SelectedIndex < 0) RecRateBox.SelectedIndex = 2;
+        RecFolderBox.Text = s.RecFolder;
+        var ii = _recInputs.FindIndex(d => d.Id == s.RecInputId);
+        RecInputBox.SelectedIndex = Math.Max(0, ii);
+        if (_recInputs.Count == 0) RecInputBox.SelectedIndex = 0;
+        _recLoading = false;
+        RefreshRec();
+        App.Rec.StateChanged += () => Dispatcher.BeginInvoke(() => { RefreshRec(); RefreshRecFiles(); });
+    }
+
+    private void RecField_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_recLoading) return;
+        var s = App.Store.Settings;
+        s.RecFormat = Math.Max(0, RecFormatBox.SelectedIndex);
+        s.RecRate = RecRates[Math.Max(0, RecRateBox.SelectedIndex)];
+        s.RecFolder = RecFolderBox.Text.Trim();
+        if (RecInputBox.SelectedIndex >= 0 && RecInputBox.SelectedIndex < _recInputs.Count)
+        {
+            s.RecInputId = _recInputs[RecInputBox.SelectedIndex].Id;
+            s.RecLoopback = _recInputs[RecInputBox.SelectedIndex].Loopback;
+        }
+        App.Store.SaveSettings();
+    }
+
+    private void RecBrowse_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new System.Windows.Forms.FolderBrowserDialog();
+        if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+        {
+            RecFolderBox.Text = dlg.SelectedPath;
+            RecField_Changed(sender, e);
+        }
+    }
+
+    private void RecOpenFolder_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var folder = string.IsNullOrWhiteSpace(App.Store.Settings.RecFolder)
+                ? System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "records")
+                : App.Store.Settings.RecFolder;
+            Process.Start("explorer.exe", folder);
+        }
+        catch { }
+    }
+
+    private void RecButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (App.Rec.State != RecordState.Idle) { App.Rec.Stop(); RefreshRecFiles(); return; }
+        RecField_Changed(sender, e);
+        var s = App.Store.Settings;
+        var rec = App.Rec;
+        rec.Folder = s.RecFolder;
+        rec.Format = (RecordFormat)Math.Max(0, s.RecFormat);
+        rec.Bitrate = s.RecRate;
+        rec.InputDeviceId = s.RecInputId;
+        rec.InputLoopback = s.RecLoopback;
+        rec.Start();
+        RefreshRecFiles();
+    }
+
+    private void RefreshRec()
+    {
+        var r = App.Rec;
+        RecStatus.Text = r.StatusText;
+        RecFile.Text = r.State == RecordState.Recording ? r.FileSummary() : "";
+        RecDot.Fill = r.State == RecordState.Recording ? Brushes.Firebrick : Brushes.Gray;
+        RecButton.Content = r.State == RecordState.Idle ? "●  RECORD" : "■  STOP";
+        RecButton.Background = r.State == RecordState.Idle
+            ? (Brush)new SolidColorBrush(Color.FromRgb(0x2A, 0xA9, 0xE0)) : Brushes.Firebrick;
+    }
+
+    private void RefreshRecFiles()
+    {
+        RecFiles.ItemsSource = App.Rec.TodayFiles().Select(f => $"{f.Name}  ({f.Size})").ToList();
     }
 
     // ---------- about / updates ----------

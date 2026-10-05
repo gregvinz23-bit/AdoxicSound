@@ -16,6 +16,7 @@ public partial class App : System.Windows.Application
     public Logger Log { get; private set; } = null!;
     public StreamEngine Engine { get; private set; } = null!;
     public SendEngine Send { get; private set; } = null!;
+    public RecordEngine Rec { get; private set; } = null!;
     public DeviceWatcher Watcher { get; private set; } = null!;
     public Icon? TrayIcon { get; private set; }
     public string PendingUrl { get; private set; } = "";
@@ -30,6 +31,7 @@ public partial class App : System.Windows.Application
         Log = new Logger();
         Engine = new StreamEngine(Log);
         Send = new SendEngine(Log);
+        Rec = new RecordEngine(Log);
         Engine.Configure(Store.Settings.SampleRate, Store.Settings.FastMode);
         ApplyStartOnBoot();
         SetupTray();
@@ -117,10 +119,12 @@ public partial class App : System.Windows.Application
         try { Store.SaveSettings(); } catch { }
         try { Engine.Stop(); } catch { }
         try { Send.Stop(silent: true); } catch { }
+        try { Rec.Stop(silent: true); } catch { }
         try { Watcher.Dispose(); } catch { }
         try { if (_tray != null) { _tray.Visible = false; _tray.Dispose(); } } catch { }
         try { Engine.Dispose(); } catch { }
         try { Send.Dispose(); } catch { }
+        try { Rec.Dispose(); } catch { }
         base.OnExit(e);
     }
 }
