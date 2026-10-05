@@ -74,6 +74,31 @@
                            Foreground="{DynamicResource FgDim}" TextWrapping="Wrap" Margin="0,8"/>
             </StackPanel>
         </TabItem>
+        <TabItem Header="Record">
+            <StackPanel Margin="10">
+                <TextBlock Text="Input device" FontWeight="Bold"/>
+                <ComboBox x:Name="RecInputBox" Margin="0,4,0,12" SelectionChanged="RecInput_Changed"/>
+                <TextBlock Text="Format" FontWeight="Bold"/>
+                <ComboBox x:Name="RecFormatBox" Margin="0,4,0,12" SelectionChanged="RecFormat_Changed">
+                    <ComboBoxItem Content="MP3"/>
+                    <ComboBoxItem x:Name="RecAacItem" Content="AAC"/>
+                    <ComboBoxItem Content="WAV"/>
+                </ComboBox>
+                <TextBlock Text="Quality" FontWeight="Bold"/>
+                <ComboBox x:Name="RecRateBox" Margin="0,4,0,12" SelectionChanged="RecRate_Changed">
+                    <ComboBoxItem Content="64 kbps"/><ComboBoxItem Content="96 kbps"/>
+                    <ComboBoxItem Content="128 kbps"/><ComboBoxItem Content="160 kbps"/>
+                    <ComboBoxItem Content="320 kbps"/>
+                </ComboBox>
+                <TextBlock Text="Save folder" FontWeight="Bold"/>
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,12">
+                    <TextBox x:Name="RecFolderBox" Width="250" Margin="0,0,6,0" TextChanged="RecFolder_Changed"/>
+                    <Button x:Name="RecBrowse" Content="Browse" Click="RecBrowse_Click"/>
+                </StackPanel>
+                <TextBlock Text="Empty folder = portable records\ next to the app."
+                           Foreground="{DynamicResource FgDim}" TextWrapping="Wrap"/>
+            </StackPanel>
+        </TabItem>
     </TabControl>
     </ScrollViewer>
 </Window>

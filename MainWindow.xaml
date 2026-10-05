@@ -121,33 +121,6 @@
                     </StackPanel>
                     <TextBlock x:Name="RecFile" Text="" HorizontalAlignment="Center"
                                Foreground="{DynamicResource FgDim}" Margin="0,0,0,8"/>
-                    <TextBlock Text="Input" FontWeight="Bold"/>
-                    <ComboBox x:Name="RecInputBox" Margin="0,2,0,6" SelectionChanged="RecField_Changed"/>
-                    <Grid Margin="0,2">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="70"/><ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition/><RowDefinition/>
-                        </Grid.RowDefinitions>
-                        <TextBlock Text="Format" Grid.Row="0" VerticalAlignment="Center"/>
-                        <ComboBox x:Name="RecFormatBox" Grid.Row="0" Grid.Column="1" Margin="0,2" SelectionChanged="RecField_Changed">
-                            <ComboBoxItem Content="MP3"/>
-                            <ComboBoxItem x:Name="RecAacItem" Content="AAC"/>
-                            <ComboBoxItem Content="WAV"/>
-                        </ComboBox>
-                        <TextBlock Text="Quality" Grid.Row="1" VerticalAlignment="Center"/>
-                        <ComboBox x:Name="RecRateBox" Grid.Row="1" Grid.Column="1" Margin="0,2" SelectionChanged="RecField_Changed">
-                            <ComboBoxItem Content="64 kbps"/><ComboBoxItem Content="96 kbps"/>
-                            <ComboBoxItem Content="128 kbps"/><ComboBoxItem Content="160 kbps"/>
-                            <ComboBoxItem Content="320 kbps"/>
-                        </ComboBox>
-                    </Grid>
-                    <TextBlock Text="Folder" FontWeight="Bold" Margin="0,4,0,0"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,2,0,6">
-                        <TextBox x:Name="RecFolderBox" Width="300" Margin="0,0,6,0" TextChanged="RecField_Changed"/>
-                        <Button x:Name="RecBrowse" Content="Browse" Click="RecBrowse_Click"/>
-                    </StackPanel>
                     <Button x:Name="RecButton" Content="●  RECORD" FontSize="16" Padding="14,10"
                             Background="#2AA9E0" Click="RecButton_Click" Margin="0,8"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">

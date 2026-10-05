@@ -15,6 +15,8 @@ public partial class SettingsWindow : Window
     private List<(string Id, string Name, bool Loopback)> _inputs = new();
     private static readonly int[] SilenceOptions = { 10, 15, 30, 60, 120, 300 };
     private static readonly int[] SendRates = { 64, 96, 128, 160, 320 };
+    private static readonly int[] RecRates = { 64, 96, 128, 160, 320 };
+    private List<(string Id, string Name, bool Loopback)> _recInputs = new();
     private static readonly int[] SendCuts = { 0, 5, 15, 30, 60 };
     private static readonly int[] SendRetries = { 4, 10, 30 };
 
@@ -38,6 +40,7 @@ public partial class SettingsWindow : Window
         SendCutBox.SelectedIndex = Math.Max(0, Array.IndexOf(SendCuts, sp.CutoffMin));
         SendRetryBox.SelectedIndex = Math.Max(0, Array.IndexOf(SendRetries, sp.ReconnectSec));
         GoLiveBootToggle.IsChecked = App.Store.Settings.GoLiveOnBoot;
+        InitRecSettings();
         TrayToggle.IsChecked = App.Store.Settings.TrayOnClose;
         BootToggle.IsChecked = App.Store.Settings.StartOnBoot;
         App.Watcher.DevicesChanged += Watcher_Devices;
@@ -214,6 +217,64 @@ public partial class SettingsWindow : Window
         App.Store.Settings.GoLiveOnBoot = GoLiveBootToggle.IsChecked == true;
         App.Store.SaveSettings();
         App.Log.Info("Go live on startup " + (App.Store.Settings.GoLiveOnBoot ? "ON" : "OFF"));
+    }
+
+    private void InitRecSettings()
+    {
+        _recInputs = SendEngine.ListInputs();
+        RecInputBox.ItemsSource = _recInputs.Select(d => d.Name).ToList();
+        if (_recInputs.Count == 0) RecInputBox.ItemsSource = new List<string> { "No input found" };
+        var s = App.Store.Settings;
+        RecFormatBox.SelectedIndex = Math.Max(0, Math.Min(2, s.RecFormat));
+        if (!RecordEngine.AacAvailable) RecAacItem.IsEnabled = false;
+        RecRateBox.SelectedIndex = Math.Max(0, Array.IndexOf(RecRates, s.RecRate));
+        if (RecRateBox.SelectedIndex < 0) RecRateBox.SelectedIndex = 2;
+        RecFolderBox.Text = s.RecFolder;
+        var ii = _recInputs.FindIndex(d => d.Id == s.RecInputId);
+        RecInputBox.SelectedIndex = Math.Max(0, ii);
+        if (_recInputs.Count == 0) RecInputBox.SelectedIndex = 0;
+    }
+
+    private void RecInput_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || RecInputBox.SelectedIndex < 0) return;
+        if (RecInputBox.SelectedIndex < _recInputs.Count)
+        {
+            App.Store.Settings.RecInputId = _recInputs[RecInputBox.SelectedIndex].Id;
+            App.Store.Settings.RecLoopback = _recInputs[RecInputBox.SelectedIndex].Loopback;
+        }
+        App.Store.SaveSettings();
+    }
+
+    private void RecFormat_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || RecFormatBox.SelectedIndex < 0) return;
+        App.Store.Settings.RecFormat = RecFormatBox.SelectedIndex;
+        App.Store.SaveSettings();
+    }
+
+    private void RecRate_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || RecRateBox.SelectedIndex < 0) return;
+        App.Store.Settings.RecRate = RecRates[RecRateBox.SelectedIndex];
+        App.Store.SaveSettings();
+    }
+
+    private void RecFolder_Changed(object sender, TextChangedEventArgs e)
+    {
+        if (_loading) return;
+        App.Store.Settings.RecFolder = RecFolderBox.Text.Trim();
+        App.Store.SaveSettings();
+    }
+
+    private void RecBrowse_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new System.Windows.Forms.FolderBrowserDialog();
+        if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+        {
+            RecFolderBox.Text = dlg.SelectedPath;
+            RecFolder_Changed(sender, null!);
+        }
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();

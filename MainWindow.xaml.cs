@@ -67,7 +67,8 @@ public partial class MainWindow : Window
         App.Engine.FailoverUI += url => Dispatcher.BeginInvoke(() => ShowFailover(url));
         App.Send.StateChanged += () => Dispatcher.BeginInvoke(RefreshSend);
         InitSendTab();
-        InitRecTab();
+        App.Rec.StateChanged += () => Dispatcher.BeginInvoke(() => { RefreshRec(); RefreshRecFiles(); });
+        RefreshRecFiles();
         if (App.Store.Settings.GoLiveOnBoot)
         {
             var sp = SendCfg();
@@ -440,55 +441,6 @@ public partial class MainWindow : Window
 
     // ---------- record tab ----------
 
-    private bool _recLoading = true;
-    private static readonly int[] RecRates = { 64, 96, 128, 160, 320 };
-    private List<(string Id, string Name, bool Loopback)> _recInputs = new();
-
-    private void InitRecTab()
-    {
-        _recInputs = SendEngine.ListInputs();
-        RecInputBox.ItemsSource = _recInputs.Select(d => d.Name).ToList();
-        if (_recInputs.Count == 0) RecInputBox.ItemsSource = new List<string> { "No input found" };
-        var s = App.Store.Settings;
-        _recLoading = true;
-        RecFormatBox.SelectedIndex = s.RecFormat;
-        if (!RecordEngine.AacAvailable) RecAacItem.IsEnabled = false;
-        RecRateBox.SelectedIndex = Math.Max(0, Array.IndexOf(RecRates, s.RecRate));
-        if (RecRateBox.SelectedIndex < 0) RecRateBox.SelectedIndex = 2;
-        RecFolderBox.Text = s.RecFolder;
-        var ii = _recInputs.FindIndex(d => d.Id == s.RecInputId);
-        RecInputBox.SelectedIndex = Math.Max(0, ii);
-        if (_recInputs.Count == 0) RecInputBox.SelectedIndex = 0;
-        _recLoading = false;
-        RefreshRec();
-        App.Rec.StateChanged += () => Dispatcher.BeginInvoke(() => { RefreshRec(); RefreshRecFiles(); });
-    }
-
-    private void RecField_Changed(object sender, RoutedEventArgs e)
-    {
-        if (_recLoading) return;
-        var s = App.Store.Settings;
-        s.RecFormat = Math.Max(0, RecFormatBox.SelectedIndex);
-        s.RecRate = RecRates[Math.Max(0, RecRateBox.SelectedIndex)];
-        s.RecFolder = RecFolderBox.Text.Trim();
-        if (RecInputBox.SelectedIndex >= 0 && RecInputBox.SelectedIndex < _recInputs.Count)
-        {
-            s.RecInputId = _recInputs[RecInputBox.SelectedIndex].Id;
-            s.RecLoopback = _recInputs[RecInputBox.SelectedIndex].Loopback;
-        }
-        App.Store.SaveSettings();
-    }
-
-    private void RecBrowse_Click(object sender, RoutedEventArgs e)
-    {
-        var dlg = new System.Windows.Forms.FolderBrowserDialog();
-        if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-        {
-            RecFolderBox.Text = dlg.SelectedPath;
-            RecField_Changed(sender, e);
-        }
-    }
-
     private void RecOpenFolder_Click(object sender, RoutedEventArgs e)
     {
         try
@@ -504,7 +456,6 @@ public partial class MainWindow : Window
     private void RecButton_Click(object sender, RoutedEventArgs e)
     {
         if (App.Rec.State != RecordState.Idle) { App.Rec.Stop(); RefreshRecFiles(); return; }
-        RecField_Changed(sender, e);
         var s = App.Store.Settings;
         var rec = App.Rec;
         rec.Folder = s.RecFolder;
