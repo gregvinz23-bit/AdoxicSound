@@ -1,27 +1,28 @@
-# AdoxicSound
-Over the Internet Audio Receiver — a portable Windows studio for live internet radio: receive MMS and Shoutcast/Icecast streams with auto-reconnect, or broadcast your microphone to any Icecast/Shoutcast server.
+# Adoxic Sound
+A portable Windows studio for live internet radio: receive MMS and Shoutcast/Icecast streams with auto-reconnect, or broadcast your microphone to any Icecast/Shoutcast server. Accurate meters, stream health stats, and silent-failure alarms included.
 
-Developed by Greg Vincent. © 2026 Mantraix Software Solutions. All rights reserved.
+Crafted by Greg Vincent for Mantraix Software Solutions. © 2026 Mantraix Software Solutions. All rights reserved — see LICENSE.txt.
 
-## What it does
-- Plays live audio from `mms://` (Windows Media) and `http(s)://` Shoutcast/Icecast streams
-- Infinite auto-reconnect (every 4s) when a stream drops, with MMS-over-HTTP fallback
-- Fast start (~1-2s) with Fast/Stable buffering toggle
-- Accurate stereo L/R level meters + automatic balance correction (toggleable)
-- Stream favorites, live logs with export, output device picker with USB hot-plug support
-- Sample rate selection (44100/48000/96000 Hz), tray mode, start-on-boot, update checker
+## Install (portable, no setup)
+1. Download the latest `AdoxicSound-vX.X-portable.zip` from [Releases](https://github.com/gregvinz23-bit/AdoxicSound/releases)
+2. Extract anywhere and run `AdoxicSound.exe` — that's it
+3. Your stations, settings and logs live next to the exe, so the folder roams beautifully on USB
 
-## Download & run (portable, no install)
-1. Go to [Releases](https://github.com/gregvinz23-bit/AdoxicSound/releases), download `AdoxicSound-v1.4-portable.zip`
-2. Extract anywhere (even USB) and run `AoIP-RX.exe`
-3. Paste a stream URL, press STREAM
+First launch takes a little while (Windows checks new files once), then it opens in seconds.
 
-No admin rights needed. Settings (`settings.json`, `streams.json`) and logs stay next to the exe.
-Verify the download with the SHA-256 hash posted on the release page.
+## Everyday use
+- **Receive tab** — paste a stream address, press STREAM. Save favorites with + Add.
+- **Send tab** — enter your Icecast/Shoutcast details once, GO LIVE to broadcast your mic.
+- **Record tab** — capture your input to MP3/AAC/WAV with hourly filing.
+- **Logs** — every connect, drop, retry and alarm, exportable for overnight checks.
+
+The full tour lives in `Instruction.txt` (ships in the project for now — ask us and we'll bundle it).
 
 ## Build from source
-- .NET 8 SDK, Windows: `dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=false`
+Windows + .NET 8 SDK:
+```
+dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=false
+```
 
-## Notes
-- First startup can take ~30-60s (one-time native extraction + OS scan); afterwards it starts in seconds.
-- A new unsigned exe may show a Windows SmartScreen "Unknown publisher" prompt on first run — click More info > Run anyway.
+## Support
+Something wrong? Open the Logs window, press Export, and send us the file with a line about what happened. Thank you for trying Adoxic Sound!

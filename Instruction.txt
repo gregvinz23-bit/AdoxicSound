@@ -1,14 +1,14 @@
-AoIP RX — Instructions
+Adoxic Sound — Instructions
 ==============================
 A portable Windows receiver for live MMS and Shoutcast/Icecast radio —
-with auto-reconnect, accurate stereo meters, and automatic balance correction.
+with auto-reconnect, accurate stereo meters, stream health stats, and silent-failure alarms.
 © 2026 Mantraix Software. All rights reserved.
 
 1. WHAT YOU DOWNLOADED
 ----------------------
 The portable zip contains everything the program needs.
 There is no installer. Contents after extracting:
-  AoIP-RX.exe                  the program (double-click to run)
+  AdoxicSound.exe                  the program (double-click to run)
   libvlc\                      audio engine files (do not delete)
   *.dll                        system files the program needs (do not delete)
   settings.json                created on first run (your settings)
@@ -28,7 +28,7 @@ There is no installer. Contents after extracting:
 3. FIRST RUN
 ------------
 1. Extract the zip anywhere (Documents, Desktop, or a USB stick).
-2. Double-click AoIP-RX.exe.
+2. Double-click AdoxicSound.exe.
    NOTE: the very first start can take 30-60 seconds (Windows checks the
    new file once). After that it opens in seconds.
 3. If Windows SmartScreen says "Unknown publisher": click
@@ -37,7 +37,7 @@ There is no installer. Contents after extracting:
 
 4. PLAYING A STREAM
 -------------------
-STREAM tab:
+RECEIVE tab:
 1. Type a stream address in the box, e.g.
      mms://your-media-server:port
      http://your-stream-host:port

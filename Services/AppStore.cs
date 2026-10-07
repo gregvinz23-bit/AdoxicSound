@@ -61,6 +61,7 @@ public sealed class AppStore
     public Settings Settings { get; private set; } = new();
     public StreamsFile Streams { get; private set; } = new();
     public ServersFile Servers { get; private set; } = new();
+    public bool IsFirstRun { get; private set; }
 
     public AppStore()
     {
@@ -90,6 +91,8 @@ public sealed class AppStore
             var p = Path.Combine(_base, "settings.json");
             if (File.Exists(p))
                 Settings = JsonSerializer.Deserialize<Settings>(File.ReadAllText(p)) ?? new();
+            else
+                IsFirstRun = true;
         }
         catch { }
         try

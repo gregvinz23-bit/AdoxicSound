@@ -1,0 +1,20 @@
+Adoxic Sound — License
+=========================
+
+Thank you for using Adoxic Sound, crafted by Greg Vincent
+for Mantraix Software Solutions.
+
+You may:
+  - Install and use Adoxic Sound on any number of computers
+    you own or operate.
+  - Copy your settings between your own machines.
+
+Please do not:
+  - Redistribute, resell, or publish the program or its files.
+  - Reverse-engineer or modify the program files.
+
+The software is provided "as is", without warranty of any kind.
+Streaming costs, licensing of broadcast content, and compliance
+with local law are your responsibility.
+
+© 2026 Mantraix Software Solutions. All rights reserved.

@@ -34,6 +34,9 @@ public partial class MainWindow : Window
         foreach (var u in App.Store.Streams.Urls)
             _streams.Add(u);
         StreamList.ItemsSource = _streams;
+        UpdateEmptyHint();
+        if (App.Store.IsFirstRun)
+            App.Log.Info("Welcome to Adoxic Sound — add your first station above to begin");
 
         try
         {
@@ -192,6 +195,7 @@ public partial class MainWindow : Window
         _streams.Add(entry);
         App.Store.Streams.Urls.Add(entry);
         App.Store.SaveStreams();
+        UpdateEmptyHint();
         App.Log.Info($"Added {entry.Name}: " + url);
     }
 
@@ -201,6 +205,7 @@ public partial class MainWindow : Window
         _streams.Remove(s);
         App.Store.Streams.Urls.Remove(s);
         App.Store.SaveStreams();
+        UpdateEmptyHint();
     }
 
     private void StreamList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -215,6 +220,9 @@ public partial class MainWindow : Window
         var i = _streams.ToList().FindIndex(u => u.Url.Equals(cur, StringComparison.OrdinalIgnoreCase));
         return _streams[(i + 1) % _streams.Count].Url;
     }
+
+    private void UpdateEmptyHint() =>
+        EmptyHint.Visibility = _streams.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
     private void SelectStream(string url)
     {
