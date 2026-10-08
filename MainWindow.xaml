@@ -1,58 +1,69 @@
 <Window x:Class="AdoxicSound.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Adoxic Sound" Height="500" Width="450" ResizeMode="NoResize"
+        Title="Adoxic Sound" Height="500" Width="580" ResizeMode="NoResize"
         Background="#F2F2F2" Foreground="#111111" FontFamily="Segoe UI">
 
     <Grid Background="{DynamicResource BgWindow}">
         <TabControl x:Name="MainTabs" Background="{DynamicResource BgWindow}" BorderThickness="0" Margin="0,30,0,0"
-                    SelectionChanged="MainTabs_Changed">
+                    SelectionChanged="MainTabs_Changed" TabStripPlacement="Left">
             <!-- ============ STREAM ============ -->
             <TabItem Header="Receive">
-                <StackPanel HorizontalAlignment="Stretch" Margin="16" Background="{DynamicResource BgWindow}">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4">
-                        <Ellipse x:Name="StatusDot" Width="12" Height="12" Fill="Gray" Margin="0,0,8,0"/>
-                        <TextBlock x:Name="StatusText" Text="Ready" FontWeight="Bold" VerticalAlignment="Center"/>
-                    </StackPanel>
-                    <TextBlock x:Name="DetailText" Text="" HorizontalAlignment="Center"
-                               Foreground="{DynamicResource FgDim}" Margin="0,0,0,8" TextWrapping="Wrap"/>
-
-                    <TextBox x:Name="UrlBox" Text="mms://" Margin="0,4"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button x:Name="AddButton" Content="+ Add" Click="AddButton_Click"/>
-                        <Button x:Name="RemoveButton" Content="Remove" Click="RemoveButton_Click"/>
-                        <Button x:Name="LogsButton" Content="Logs" Click="LogsButton_Click"/>
-                    </StackPanel>
-                    <ListBox x:Name="StreamList" Height="90" Margin="0,4" DisplayMemberPath="Name"
-                             SelectionChanged="StreamList_SelectionChanged"/>
-                    <TextBlock x:Name="EmptyHint" Text="No stations yet — paste a stream address above and press + Add."
-                               HorizontalAlignment="Center" Foreground="{DynamicResource FgDim}" FontSize="11"
-                               TextWrapping="Wrap" TextAlignment="Center" Margin="0,2" Visibility="Collapsed"/>
-
+                <StackPanel HorizontalAlignment="Stretch" Margin="8,8,12,8" Background="{DynamicResource BgWindow}">
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,4">
+                                <Ellipse x:Name="StatusDot" Width="12" Height="12" Fill="Gray" Margin="0,0,8,0"/>
+                                <TextBlock x:Name="StatusText" Text="Ready" FontWeight="Bold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock x:Name="DetailText" Text="" HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource FgDim}" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                            <TextBox x:Name="UrlBox" Text="mms://" Margin="0,4"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <Button x:Name="AddButton" Content="+ Add" Click="AddButton_Click"/>
+                                <Button x:Name="RemoveButton" Content="Remove" Click="RemoveButton_Click"/>
+                                <Button x:Name="LogsButton" Content="Logs" Click="LogsButton_Click"/>
+                            </StackPanel>
+                            <ListBox x:Name="StreamList" Height="90" Margin="0,4" DisplayMemberPath="Name"
+                                     SelectionChanged="StreamList_SelectionChanged"/>
+                            <TextBlock x:Name="EmptyHint" Text="No stations yet — paste a stream address above and press + Add."
+                                       HorizontalAlignment="Center" Foreground="{DynamicResource FgDim}" FontSize="11"
+                                       TextWrapping="Wrap" TextAlignment="Center" Margin="0,2" Visibility="Collapsed"/>
+                        </StackPanel>
+                    </Border>
                     <Button x:Name="PlayStopButton" Content="▶  STREAM" FontSize="16" Padding="14,10"
-                            Background="#2AA9E0" Click="PlayStopButton_Click" Margin="0,8"/>
-
-                    <Grid Margin="0,8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="20"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="60"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition/><RowDefinition/>
-                        </Grid.RowDefinitions>
-                        <TextBlock Text="L" Grid.Row="0" HorizontalAlignment="Center"/>
-                        <ProgressBar x:Name="MeterL" Grid.Row="0" Grid.Column="1" Style="{StaticResource Meter}" Margin="4,2"/>
-                        <TextBlock x:Name="DbL" Grid.Row="0" Grid.Column="2" Text="-∞ dB" FontFamily="Consolas"/>
-                        <TextBlock Text="R" Grid.Row="1" HorizontalAlignment="Center"/>
-                        <ProgressBar x:Name="MeterR" Grid.Row="1" Grid.Column="1" Style="{StaticResource Meter}" Margin="4,2"/>
-                        <TextBlock x:Name="DbR" Grid.Row="1" Grid.Column="2" Text="-∞ dB" FontFamily="Consolas"/>
-                    </Grid>
-                    <TextBlock x:Name="StatsText" Text="Up --:--:-- · Drops 0 · Glitches 0 · Alarms 0" Foreground="{DynamicResource FgDim}" FontSize="11" HorizontalAlignment="Center" Margin="0,2"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,1">
-                        <TextBlock x:Name="LifeText" Text="" Foreground="{DynamicResource FgDim}" FontSize="11" VerticalAlignment="Center"/>
-                        <Button x:Name="StatsReset" Content="Reset" Click="StatsReset_Click" FontSize="10" Padding="6,1" Margin="6,0,0,0"/>
-                    </StackPanel>
+                            Background="#2AA9E0" Click="PlayStopButton_Click" Margin="0,0,0,10"/>
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <Grid Margin="0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="20"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="60"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition/><RowDefinition/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="L" Grid.Row="0" HorizontalAlignment="Center"/>
+                                <Grid Grid.Row="0" Grid.Column="1" Margin="4,2">
+                                    <ProgressBar x:Name="MeterL" Style="{StaticResource Meter}"/>
+                                    <Rectangle x:Name="TickL" Width="2" Fill="#111111" HorizontalAlignment="Left" Opacity="0.85"/>
+                                </Grid>
+                                <TextBlock x:Name="DbL" Grid.Row="0" Grid.Column="2" Text="-∞ dB" FontFamily="Consolas"/>
+                                <TextBlock Text="R" Grid.Row="1" HorizontalAlignment="Center"/>
+                                <Grid Grid.Row="1" Grid.Column="1" Margin="4,2">
+                                    <ProgressBar x:Name="MeterR" Style="{StaticResource Meter}"/>
+                                    <Rectangle x:Name="TickR" Width="2" Fill="#111111" HorizontalAlignment="Left" Opacity="0.85"/>
+                                </Grid>
+                                <TextBlock x:Name="DbR" Grid.Row="1" Grid.Column="2" Text="-∞ dB" FontFamily="Consolas"/>
+                            </Grid>
+                            <TextBlock x:Name="StatsText" Text="Up --:--:-- · Drops 0 · Glitches 0 · Alarms 0" Foreground="{DynamicResource FgDim}" FontSize="11" HorizontalAlignment="Center" Margin="0,2"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,1">
+                                <TextBlock x:Name="LifeText" Text="" Foreground="{DynamicResource FgDim}" FontSize="11" VerticalAlignment="Center"/>
+                                <Button x:Name="StatsReset" Content="Reset" Click="StatsReset_Click" FontSize="10" Padding="6,1" Margin="6,0,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </TabItem>
 
@@ -135,8 +146,9 @@
 
             <!-- ============ ABOUT ============ -->
             <TabItem Header="About">
-                <StackPanel MaxWidth="640" HorizontalAlignment="Center" Margin="16"
-                            VerticalAlignment="Center" Background="{DynamicResource BgWindow}">
+                <Border Style="{StaticResource Card}" MaxWidth="640" HorizontalAlignment="Center" Margin="12">
+                <StackPanel HorizontalAlignment="Center"
+                            VerticalAlignment="Center" Background="Transparent">
                     <Image x:Name="LogoImage" Width="110" HorizontalAlignment="Center" Margin="0,4,0,12" RenderOptions.BitmapScalingMode="HighQuality"/>
                     <TextBlock x:Name="VersionText" Text="Adoxic Sound" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,4"/>
                     <TextBlock Text="Live internet radio studio: receive MMS and Shoutcast/Icecast, or broadcast your mic."
@@ -148,6 +160,7 @@
                             HorizontalAlignment="Center" Margin="0,0,0,4"/>
                     <TextBlock x:Name="UpdateText" Text="" HorizontalAlignment="Center" Foreground="{DynamicResource FgDim}"/>
                 </StackPanel>
+                </Border>
             </TabItem>
         </TabControl>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top"

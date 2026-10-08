@@ -4,7 +4,9 @@
              xmlns:local="clr-namespace:AdoxicSound"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-        <SolidColorBrush x:Key="BgWindow" Color="#F2F2F2"/>
+        <SolidColorBrush x:Key="BgWindow" Color="#F3F3F3"/>
+        <SolidColorBrush x:Key="CardBg" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="CardBorder" Color="#E4E4E4"/>
         <SolidColorBrush x:Key="BgInput" Color="#FFFFFF"/>
         <SolidColorBrush x:Key="BorderInput" Color="#AAAAAA"/>
         <SolidColorBrush x:Key="FgMain" Color="#111111"/>
@@ -21,8 +23,39 @@
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Padding" Value="14,6"/>
             <Setter Property="Margin" Value="4"/>
-            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="B" Background="{TemplateBinding Background}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="B" Property="Background" Value="{DynamicResource Accent}"/>
+                                <Setter Property="Foreground" Value="Black"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="B" Property="Background" Value="#0F3A6B"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="B" Property="Background" Value="#CCCCCC"/>
+                                <Setter Property="Foreground" Value="#777777"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource CardBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
         </Style>
         <Style TargetType="TextBox">
             <Setter Property="Background" Value="{DynamicResource BgInput}"/>
@@ -67,8 +100,10 @@
         </Style>
         <Style TargetType="TabItem">
             <Setter Property="Foreground" Value="#111111"/>
-            <Setter Property="Background" Value="#FFFFFF"/>
-            <Setter Property="Padding" Value="14,6"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="16,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Margin" Value="4,2,0,2"/>
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="#BFE3F5"/>
@@ -114,12 +149,21 @@
             </Setter>
         </Style>
         <Style x:Key="Meter" TargetType="ProgressBar">
-            <Setter Property="Height" Value="14"/>
+            <Setter Property="Height" Value="16"/>
             <Setter Property="Minimum" Value="0"/>
             <Setter Property="Maximum" Value="100"/>
             <Setter Property="Background" Value="#222"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Foreground" Value="#3DDC84"/>
+            <Setter Property="Foreground">
+                <Setter.Value>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#3DDC84" Offset="0"/>
+                        <GradientStop Color="#3DDC84" Offset="0.55"/>
+                        <GradientStop Color="#FFC107" Offset="0.78"/>
+                        <GradientStop Color="#F44336" Offset="1"/>
+                    </LinearGradientBrush>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Application.Resources>
 </Application>

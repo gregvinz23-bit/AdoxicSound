@@ -24,7 +24,8 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _meterTimer = new();
     private readonly DispatcherTimer _slowTimer = new();
     private float _dispL, _dispR;
-    private float _sendDisp;
+    private float _holdL, _holdR;
+    private float _sendDisp, _sendHold;
     private bool _sendSilenceAlarmed;
 
     public MainWindow()
@@ -146,21 +147,20 @@ public partial class MainWindow : Window
         // time-based ballistics: instant attack, ~0.8s smooth release — same on any PC
         _dispL = Math.Max(pl, _dispL * 0.94f);
         _dispR = Math.Max(pr, _dispR * 0.94f);
+        _holdL = Math.Max(_dispL, _holdL * 0.985f);
+        _holdR = Math.Max(_dispR, _holdR * 0.985f);
         MeterL.Value = Math.Clamp(_dispL * 100, 0, 100);
         MeterR.Value = Math.Clamp(_dispR * 100, 0, 100);
-        MeterL.Foreground = BrushFor(_dispL);
-        MeterR.Foreground = BrushFor(_dispR);
+        TickL.Margin = new Thickness(MeterL.ActualWidth * Math.Clamp(_holdL, 0, 1), 0, 0, 0);
+        TickR.Margin = new Thickness(MeterR.ActualWidth * Math.Clamp(_holdR, 0, 1), 0, 0, 0);
         DbL.Text = DbText(_dispL);
         DbR.Text = DbText(_dispR);
         var (mp, _) = App.Send.ConsumeMic();
         _sendDisp = Math.Max(mp, _sendDisp * 0.94f);
+        _sendHold = Math.Max(_sendDisp, _sendHold * 0.985f);
         SendMeter.Value = Math.Clamp(_sendDisp * 100, 0, 100);
-        SendMeter.Foreground = BrushFor(_sendDisp);
         SendDb.Text = DbText(_sendDisp);
     }
-
-    private static Brush BrushFor(float l) =>
-        l > 0.89 ? Brushes.Red : l > 0.5 ? Brushes.Gold : Brushes.LimeGreen;
 
     private static string DbText(float l) =>
         l <= 0.0001f ? "-∞ dB" : $"{20 * Math.Log10(l):0} dB";
