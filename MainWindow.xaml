@@ -141,7 +141,9 @@
                     <TextBlock x:Name="VersionText" Text="Adoxic Sound" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,4"/>
                     <TextBlock Text="Live internet radio studio: receive MMS and Shoutcast/Icecast, or broadcast your mic."
                                HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,8"/>
-                    <TextBlock Text="Greg Vincent · Mantraix Software Solutions · © 2026"
+                    <TextBlock Text="Greg Vincent · Mantraix Software Solutions" HorizontalAlignment="Center" Margin="0,0,0,2"/>
+                    <TextBlock Text="Support: MantraixSoftwareSolutions@gmail.com" HorizontalAlignment="Center" Margin="0,0,0,2"/>
+                    <TextBlock Text="2026 Mantraix Software Solution. All Rights Reserved"
                                HorizontalAlignment="Center" Foreground="{DynamicResource FgDim}" Margin="0,0,0,8"/>
                     <Button x:Name="UpdateButton" Content="Check for updates" Click="UpdateButton_Click"
                             HorizontalAlignment="Center" Margin="0,0,0,4"/>
