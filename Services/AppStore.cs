@@ -74,7 +74,8 @@ public sealed class AppStore
         try
         {
             var u = new Uri(url);
-            return u.Host + (u.IsDefaultPort ? "" : ":" + u.Port) + (u.AbsolutePath == "/" ? "" : u.AbsolutePath);
+            var path = Uri.UnescapeDataString(u.AbsolutePath);
+            return u.Host + (u.IsDefaultPort ? "" : ":" + u.Port) + (path == "/" ? "" : path);
         }
         catch { return url; }
     }
