@@ -39,23 +39,39 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="20"/>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="46"/>
+                                    <ColumnDefinition Width="14"/>
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
-                                    <RowDefinition/><RowDefinition/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Text="L" Grid.Row="0" HorizontalAlignment="Center"/>
-                                <Grid Grid.Row="0" Grid.Column="1" Margin="4,2">
+                                <Grid Grid.Row="0" Grid.Column="1" Margin="4,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
+                                        <ColumnDefinition/><ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="-24" FontSize="9" Foreground="#888888" HorizontalAlignment="Left"/>
+                                    <TextBlock Text="-18" Grid.Column="1" FontSize="9" Foreground="#888888" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="-12" Grid.Column="2" FontSize="9" Foreground="#888888" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="-6" Grid.Column="3" FontSize="9" Foreground="#888888" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="0" Grid.Column="4" FontSize="9" Foreground="#888888" HorizontalAlignment="Right"/>
+                                </Grid>
+                                <TextBlock Text="L" Grid.Row="1" HorizontalAlignment="Center"/>
+                                <Grid Grid.Row="1" Grid.Column="1" Margin="4,2">
                                     <ProgressBar x:Name="MeterL" Style="{StaticResource Meter}"/>
                                     <Rectangle x:Name="TickL" Width="2" Fill="#111111" HorizontalAlignment="Left" Opacity="0.85"/>
                                 </Grid>
-                                <TextBlock x:Name="DbL" Grid.Row="0" Grid.Column="2" Text="-∞ dB" FontFamily="Consolas"/>
-                                <TextBlock Text="R" Grid.Row="1" HorizontalAlignment="Center"/>
-                                <Grid Grid.Row="1" Grid.Column="1" Margin="4,2">
+                                <TextBlock x:Name="DbL" Grid.Row="1" Grid.Column="2" Text="-∞ dB" FontFamily="Consolas" FontSize="11"/>
+                                <Ellipse x:Name="ClipL" Grid.Row="1" Grid.Column="3" Width="10" Height="10" Fill="#CCCCCC" ToolTip="Clip"/>
+                                <TextBlock Text="R" Grid.Row="2" HorizontalAlignment="Center"/>
+                                <Grid Grid.Row="2" Grid.Column="1" Margin="4,2">
                                     <ProgressBar x:Name="MeterR" Style="{StaticResource Meter}"/>
                                     <Rectangle x:Name="TickR" Width="2" Fill="#111111" HorizontalAlignment="Left" Opacity="0.85"/>
                                 </Grid>
-                                <TextBlock x:Name="DbR" Grid.Row="1" Grid.Column="2" Text="-∞ dB" FontFamily="Consolas"/>
+                                <TextBlock x:Name="DbR" Grid.Row="2" Grid.Column="2" Text="-∞ dB" FontFamily="Consolas" FontSize="11"/>
+                                <Ellipse x:Name="ClipR" Grid.Row="2" Grid.Column="3" Width="10" Height="10" Fill="#CCCCCC" ToolTip="Clip"/>
                             </Grid>
                             <TextBlock x:Name="StatsText" Text="Up --:--:-- · Drops 0 · Glitches 0 · Alarms 0" Foreground="{DynamicResource FgDim}" FontSize="11" HorizontalAlignment="Center" Margin="0,2"/>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,1">
@@ -81,6 +97,8 @@
                     </StackPanel>
                     <TextBlock x:Name="SendDetail" Text="" HorizontalAlignment="Center"
                                Foreground="{DynamicResource FgDim}" Margin="0,0,0,8"/>
+                    <Border Style="{StaticResource Card}">
+                    <StackPanel>
                     <Grid Margin="0,2">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="70"/>
@@ -116,8 +134,10 @@
                         <ProgressBar x:Name="SendMeter" Grid.Column="1" Style="{StaticResource Meter}" Margin="4,2"/>
                         <TextBlock x:Name="SendDb" Grid.Column="2" Text="-∞ dB" FontFamily="Consolas"/>
                     </Grid>
+                    </StackPanel>
+                    </Border>
                     <Button x:Name="GoLiveButton" Content="●  GO LIVE" FontSize="16" Padding="14,10"
-                            Background="#2AA9E0" Click="GoLiveButton_Click" Margin="0,8"/>
+                            Background="#2AA9E0" Click="GoLiveButton_Click" Margin="0,0,0,10"/>
                     <Button x:Name="SendLogsButton" Content="Logs" Click="SendLogsButton_Click"
                             HorizontalAlignment="Center" Padding="20,4" Margin="0,0,0,4"/>
                     <TextBlock x:Name="SendStats" Text="" HorizontalAlignment="Center"
@@ -128,19 +148,23 @@
 
             <!-- ============ RECORD ============ -->
             <TabItem Header="Record">
-                <StackPanel HorizontalAlignment="Stretch" Margin="16" Background="{DynamicResource BgWindow}">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4">
+                <StackPanel HorizontalAlignment="Stretch" Margin="8,8,12,8" Background="{DynamicResource BgWindow}">
+                    <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,4">
                         <Ellipse x:Name="RecDot" Width="12" Height="12" Fill="Gray" Margin="0,0,8,0"/>
                         <TextBlock x:Name="RecStatus" Text="Not recording" FontWeight="Bold" VerticalAlignment="Center"/>
                     </StackPanel>
                     <TextBlock x:Name="RecFile" Text="" HorizontalAlignment="Center"
                                Foreground="{DynamicResource FgDim}" Margin="0,0,0,8"/>
                     <Button x:Name="RecButton" Content="●  RECORD" FontSize="16" Padding="14,10"
-                            Background="#2AA9E0" Click="RecButton_Click" Margin="0,8"/>
+                            Background="#2AA9E0" Click="RecButton_Click" Margin="0,0,0,8"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                         <Button x:Name="RecOpenFolder" Content="Open folder" Click="RecOpenFolder_Click"/>
                     </StackPanel>
                     <ListBox x:Name="RecFiles" Height="80" Margin="0,4"/>
+                    </StackPanel>
+                    </Border>
                 </StackPanel>
             </TabItem>
 

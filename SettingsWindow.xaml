@@ -4,7 +4,8 @@
         Title="Settings" Height="480" Width="400" ResizeMode="NoResize"
         Background="#F2F2F2" Foreground="#111111" FontFamily="Segoe UI">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <TabControl Margin="8">
+    <Border Style="{StaticResource Card}" Margin="8">
+    <TabControl>
         <TabItem Header="Receive">
             <StackPanel Margin="10">
                 <TextBlock Text="Output device" FontWeight="Bold"/>
@@ -109,5 +110,6 @@
             </StackPanel>
         </TabItem>
     </TabControl>
+    </Border>
     </ScrollViewer>
 </Window>

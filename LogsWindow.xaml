@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Logs" Height="420" Width="560" MinWidth="400" MinHeight="280"
         Background="#F2F2F2" Foreground="#111111" FontFamily="Segoe UI">
-    <Grid Margin="12">
+    <Border Style="{StaticResource Card}" Margin="8">
+    <Grid Margin="4">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -22,4 +23,5 @@
         </StackPanel>
         <ListBox x:Name="LogList" Grid.Row="1" Margin="0,8" FontFamily="Consolas" FontSize="12"/>
     </Grid>
+    </Border>
 </Window>

@@ -25,7 +25,9 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _slowTimer = new();
     private float _dispL, _dispR;
     private float _holdL, _holdR;
+    private bool _clipL, _clipR;
     private float _sendDisp, _sendHold;
+    private int _pulse;
     private bool _sendSilenceAlarmed;
 
     public MainWindow()
@@ -136,6 +138,12 @@ public partial class MainWindow : Window
             EngineState.Buffering or EngineState.Connecting or EngineState.Reconnecting => Brushes.Gold,
             _ => Brushes.Gray
         };
+        StatusDot.Effect = new System.Windows.Media.Effects.DropShadowEffect
+        {
+            Color = ((SolidColorBrush)StatusDot.Fill).Color,
+            BlurRadius = 8,
+            ShadowDepth = 0
+        };
         PlayStopButton.Content = e.State == EngineState.Stopped ? "▶  STREAM" : "■  STOP";
         PlayStopButton.Background = e.State == EngineState.Stopped
             ? (Brush)new SolidColorBrush(Color.FromRgb(0x2A, 0xA9, 0xE0)) : Brushes.Firebrick;
@@ -153,6 +161,16 @@ public partial class MainWindow : Window
         MeterR.Value = Math.Clamp(_dispR * 100, 0, 100);
         TickL.Margin = new Thickness(MeterL.ActualWidth * Math.Clamp(_holdL, 0, 1), 0, 0, 0);
         TickR.Margin = new Thickness(MeterR.ActualWidth * Math.Clamp(_holdR, 0, 1), 0, 0, 0);
+        if (_dispL > 0.98f) _clipL = true; else if (_dispL < 0.5f) _clipL = false;
+        if (_dispR > 0.98f) _clipR = true; else if (_dispR < 0.5f) _clipR = false;
+        ClipL.Fill = _clipL ? Brushes.Red : Brushes.LightGray;
+        ClipR.Fill = _clipR ? Brushes.Red : Brushes.LightGray;
+        // status glow pulse while busy
+        _pulse++;
+        var busyRx = App.Engine.State is EngineState.Buffering or EngineState.Connecting or EngineState.Reconnecting;
+        var busyTx = App.Send.State is SendState.Connecting or SendState.Reconnecting;
+        StatusDot.Opacity = busyRx ? 0.45 + 0.55 * Math.Abs(Math.Sin(_pulse * 0.25)) : 1.0;
+        SendDot.Opacity = busyTx ? 0.45 + 0.55 * Math.Abs(Math.Sin(_pulse * 0.25)) : 1.0;
         DbL.Text = DbText(_dispL);
         DbR.Text = DbText(_dispR);
         var (mp, _) = App.Send.ConsumeMic();
@@ -443,6 +461,12 @@ public partial class MainWindow : Window
             SendState.Connecting or SendState.Reconnecting => Brushes.Gold,
             _ => Brushes.Gray
         };
+        SendDot.Effect = new System.Windows.Media.Effects.DropShadowEffect
+        {
+            Color = ((SolidColorBrush)SendDot.Fill).Color,
+            BlurRadius = 8,
+            ShadowDepth = 0
+        };
         GoLiveButton.Content = s.State == SendState.Stopped ? "●  GO LIVE" : "■  STOP";
         GoLiveButton.Background = s.State == SendState.Stopped
             ? (Brush)new SolidColorBrush(Color.FromRgb(0x2A, 0xA9, 0xE0)) : Brushes.Firebrick;
@@ -496,6 +520,7 @@ public partial class MainWindow : Window
         var r = App.Rec;
         RecStatus.Text = r.StatusText;
         RecFile.Text = r.State == RecordState.Recording ? r.FileSummary() : "";
+        RecDot.Fill = r.State == RecordState.Recording ? Brushes.Firebrick : Brushes.Gray;
         RecDot.Fill = r.State == RecordState.Recording ? Brushes.Firebrick : Brushes.Gray;
         RecButton.Content = r.State == RecordState.Idle ? "●  RECORD" : "■  STOP";
         RecButton.Background = r.State == RecordState.Idle
