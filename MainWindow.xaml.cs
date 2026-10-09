@@ -226,11 +226,16 @@ public partial class MainWindow : Window
 
     private void RemoveButton_Click(object sender, RoutedEventArgs e)
     {
-        if (StreamList.SelectedItem is not StreamEntry s) return;
+        if (StreamList.SelectedItem is not StreamEntry s)
+        {
+            App.Log.Warn("Select a station in the list first, then Remove");
+            return;
+        }
         _streams.Remove(s);
         App.Store.Streams.Urls.Remove(s);
         App.Store.SaveStreams();
         UpdateEmptyHint();
+        App.Log.Info("Removed: " + s.Name);
     }
 
     private void StreamList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -433,7 +438,11 @@ public partial class MainWindow : Window
     private void SendDestDel_Click(object sender, RoutedEventArgs e)
     {
         var p = SelectedDest();
-        if (p == null) return;
+        if (p == null)
+        {
+            App.Log.Warn("Select a destination in the list first, then Remove");
+            return;
+        }
         if (_senders.TryGetValue(p, out var eng)) { eng.Stop(); eng.Dispose(); _senders.Remove(p); }
         App.Store.Servers.Presets.Remove(p);
         App.Store.SaveServers();
