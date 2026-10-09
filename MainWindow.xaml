@@ -97,6 +97,26 @@
                     </StackPanel>
                     <TextBlock x:Name="SendDetail" Text="" HorizontalAlignment="Center"
                                Foreground="{DynamicResource FgDim}" Margin="0,0,0,8"/>
+                    <TextBlock Text="Destinations" FontWeight="Bold" Margin="0,0,0,2"/>
+                    <ListBox x:Name="SendDestList" Height="96" Margin="0,0,0,4"
+                             SelectionChanged="SendDestList_Changed">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <CheckBox IsChecked="{Binding Enabled}" VerticalAlignment="Center"
+                                              Checked="SendDestCheck_Changed" Unchecked="SendDestCheck_Changed"/>
+                                    <StackPanel Margin="6,2">
+                                        <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
+                                        <TextBlock x:Name="DestSub" Text="{Binding Summary}" Foreground="#555555" FontSize="11"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,6">
+                        <Button x:Name="SendDestAdd" Content="+ Add" Click="SendDestAdd_Click"/>
+                        <Button x:Name="SendDestDel" Content="Remove" Click="SendDestDel_Click"/>
+                    </StackPanel>
                     <Border Style="{StaticResource Card}">
                     <StackPanel>
                     <Grid Margin="0,2">

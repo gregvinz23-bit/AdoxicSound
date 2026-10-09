@@ -118,6 +118,7 @@ public partial class App : System.Windows.Application
     {
         try { Store.SaveSettings(); } catch { }
         try { Engine.Stop(); } catch { }
+        try { (MainWindow as MainWindow)?.StopAllSenders(); } catch { }
         try { Send.Stop(silent: true); } catch { }
         try { Rec.Stop(silent: true); } catch { }
         try { Watcher.Dispose(); } catch { }

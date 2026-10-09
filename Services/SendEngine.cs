@@ -13,8 +13,14 @@ public enum SendServerType { Icecast2, ShoutcastV2, ShoutcastV1 }
 public enum SendCodec { Mp3, Aac, Opus }
 public enum SendState { Stopped, Connecting, Live, Reconnecting }
 
-public sealed class SendPreset
+public sealed class SendPreset : System.ComponentModel.INotifyPropertyChanged
 {
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+    private void Changed([System.Runtime.CompilerServices.CallerMemberName] string? n = null) =>
+        PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(n));
+    private string _status = "Off air";
+    public string StatusLine { get => _status; set { _status = value; Changed(); Changed(nameof(Summary)); } }
+    public string Summary => $"{Type} {Host}:{Port}{Mount} · {Codec} {Bitrate}k";
     public string Name { get; set; } = "New server";
     public SendServerType Type { get; set; } = SendServerType.Icecast2;
     public string Host { get; set; } = "";
@@ -26,6 +32,7 @@ public sealed class SendPreset
     public SendCodec Codec { get; set; } = SendCodec.Mp3;
     public string? InputDeviceId { get; set; }
     public bool InputLoopback { get; set; } // capture a speaker output instead of a mic
+    public bool Enabled { get; set; } = true; // included in GO LIVE ALL
     public int Channels { get; set; } = 0; // 0 auto, 1 mono, 2 stereo
     public int CutoffMin { get; set; } = 0; // 0 off; auto-stop after N silent minutes
     public int ReconnectSec { get; set; } = 4;

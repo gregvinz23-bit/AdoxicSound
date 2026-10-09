@@ -71,8 +71,21 @@ public partial class MainWindow : Window
         App.Engine.StateChanged += () => Dispatcher.BeginInvoke(RefreshState);
         App.Engine.FailoverProvider += PickNextStream;
         App.Engine.FailoverUI += url => Dispatcher.BeginInvoke(() => ShowFailover(url));
-        App.Send.StateChanged += () => Dispatcher.BeginInvoke(RefreshSend);
         InitSendTab();
+        if (App.Store.Settings.GoLiveOnBoot)
+        {
+            var targets = App.Store.Servers.Presets.Where(p => p.Enabled).ToList();
+            foreach (var sp in targets)
+            {
+                if (string.IsNullOrWhiteSpace(sp.Host) || string.IsNullOrEmpty(DecodeB64(sp.PassB64))) continue;
+                var eng = new SendEngine(App.Log);
+                eng.Version = CurrentVersion;
+                eng.StateChanged += () => Dispatcher.BeginInvoke(RefreshSend);
+                _senders[sp] = eng;
+                eng.Start(ClonePreset(sp));
+            }
+            if (_senders.Count > 0) App.Log.Info("Auto go-live on startup");
+        }
         if (App.Store.Settings.RecAutoStart)
         {
             var rs = App.Store.Settings;
@@ -88,17 +101,6 @@ public partial class MainWindow : Window
         }
         App.Rec.StateChanged += () => Dispatcher.BeginInvoke(() => { RefreshRec(); RefreshRecFiles(); });
         RefreshRecFiles();
-        if (App.Store.Settings.GoLiveOnBoot)
-        {
-            var sp = SendCfg();
-            if (!string.IsNullOrWhiteSpace(sp.Host) && !string.IsNullOrEmpty(DecodeB64(sp.PassB64)))
-            {
-                App.Send.Version = CurrentVersion;
-                App.Send.Start(ClonePreset(sp));
-                App.Log.Info("Auto go-live on startup");
-            }
-            else App.Log.Warn("Go-live on startup skipped: server not configured");
-        }
         _meterTimer.Interval = TimeSpan.FromMilliseconds(25);
         _meterTimer.Tick += (_, _) => RefreshMeters();
         _meterTimer.Start();
@@ -168,12 +170,17 @@ public partial class MainWindow : Window
         // status glow pulse while busy
         _pulse++;
         var busyRx = App.Engine.State is EngineState.Buffering or EngineState.Connecting or EngineState.Reconnecting;
-        var busyTx = App.Send.State is SendState.Connecting or SendState.Reconnecting;
+        var busyTx = _senders.Values.Any(e => e.State is SendState.Connecting or SendState.Reconnecting);
         StatusDot.Opacity = busyRx ? 0.45 + 0.55 * Math.Abs(Math.Sin(_pulse * 0.25)) : 1.0;
         SendDot.Opacity = busyTx ? 0.45 + 0.55 * Math.Abs(Math.Sin(_pulse * 0.25)) : 1.0;
         DbL.Text = DbText(_dispL);
         DbR.Text = DbText(_dispR);
         var (mp, _) = App.Send.ConsumeMic();
+        foreach (var eng in _senders.Values)
+        {
+            var (lp, _) = eng.ConsumeMic();
+            if (lp > mp) mp = lp;
+        }
         _sendDisp = Math.Max(mp, _sendDisp * 0.94f);
         _sendHold = Math.Max(_sendDisp, _sendHold * 0.985f);
         SendMeter.Value = Math.Clamp(_sendDisp * 100, 0, 100);
@@ -361,35 +368,39 @@ public partial class MainWindow : Window
         }
     }
 
-    // ---------- send tab (single server config, auto-saved) ----------
+    // ---------- send tab (multi-destination, one engine each) ----------
 
     private bool _sendLoading = true;
+    private readonly Dictionary<SendPreset, SendEngine> _senders = new();
 
-    private SendPreset SendCfg()
-    {
-        var s = App.Store.Servers;
-        var p = s.Presets.FirstOrDefault();
-        if (p == null)
-        {
-            p = new SendPreset { Name = "Server" };
-            s.Presets.Add(p);
-            App.Store.SaveServers();
-        }
-        return p;
-    }
+    private SendPreset? SelectedDest() => SendDestList.SelectedItem as SendPreset;
 
     private void InitSendTab()
     {
-        var p = SendCfg();
         _sendLoading = true;
-        SendTypeBox.SelectedIndex = (int)p.Type;
-        SendHost.Text = p.Host;
-        SendPort.Text = p.Port.ToString();
-        SendMount.Text = p.Mount;
-        SendUser.Text = p.User;
-        SendPass.Password = DecodeB64(p.PassB64);
+        SendDestList.ItemsSource = App.Store.Servers.Presets;
+        if (App.Store.Servers.Presets.Count == 0)
+        {
+            App.Store.Servers.Presets.Add(new SendPreset { Name = "Server 1" });
+            App.Store.SaveServers();
+        }
+        SendDestList.SelectedIndex = 0;
+        LoadDestFields();
         _sendLoading = false;
         RefreshSend();
+    }
+
+    private void LoadDestFields()
+    {
+        var p = SelectedDest();
+        _sendLoading = true;
+        SendTypeBox.SelectedIndex = p == null ? 0 : (int)p.Type;
+        SendHost.Text = p?.Host ?? "";
+        SendPort.Text = p?.Port.ToString() ?? "8000";
+        SendMount.Text = p?.Mount ?? "/live";
+        SendUser.Text = p?.User ?? "source";
+        SendPass.Password = DecodeB64(p?.PassB64 ?? "");
+        _sendLoading = false;
     }
 
     private static string DecodeB64(string b)
@@ -398,10 +409,44 @@ public partial class MainWindow : Window
         catch { return b; }
     }
 
+    private void SendDestList_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_sendLoading) return;
+        LoadDestFields();
+    }
+
+    private void SendDestCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        App.Store.SaveServers();
+    }
+
+    private void SendDestAdd_Click(object sender, RoutedEventArgs e)
+    {
+        var p = new SendPreset { Name = "Server " + (App.Store.Servers.Presets.Count + 1) };
+        App.Store.Servers.Presets.Add(p);
+        App.Store.SaveServers();
+        SendDestList.SelectedItem = p;
+        LoadDestFields();
+        App.Log.Info("Destination added: " + p.Name);
+    }
+
+    private void SendDestDel_Click(object sender, RoutedEventArgs e)
+    {
+        var p = SelectedDest();
+        if (p == null) return;
+        if (_senders.TryGetValue(p, out var eng)) { eng.Stop(); eng.Dispose(); _senders.Remove(p); }
+        App.Store.Servers.Presets.Remove(p);
+        App.Store.SaveServers();
+        if (SendDestList.Items.Count > 0) SendDestList.SelectedIndex = 0;
+        LoadDestFields();
+        App.Log.Info("Destination removed: " + p.Name);
+    }
+
     private void SendField_Changed(object sender, RoutedEventArgs e)
     {
         if (_sendLoading) return;
-        var p = SendCfg();
+        var p = SelectedDest();
+        if (p == null) return;
         p.Type = (SendServerType)Math.Max(0, SendTypeBox.SelectedIndex);
         p.Host = SendHost.Text.Trim();
         if (int.TryParse(SendPort.Text.Trim(), out var port)) p.Port = Math.Clamp(port, 1, 65535);
@@ -409,27 +454,41 @@ public partial class MainWindow : Window
         p.User = SendUser.Text.Trim();
         p.PassB64 = SendEngine.Encode(SendPass.Password);
         App.Store.SaveServers();
+        p.StatusLine = p.StatusLine; // refresh summary binding
     }
 
     private void GoLiveButton_Click(object sender, RoutedEventArgs e)
     {
-        if (App.Send.State != SendState.Stopped)
+        if (_senders.Count > 0)
         {
-            App.Send.Stop();
-            MainTabs_Changed(sender, null!);
+            foreach (var eng in _senders.Values) eng.Stop();
+            foreach (var eng in _senders.Values) eng.Dispose();
+            _senders.Clear();
+            App.Log.Info("Off air (all destinations)");
+            RestartSendMonitor();
+            RefreshSend();
             return;
         }
         App.Send.MonitorStop();
         SendField_Changed(sender, e);
-        var p = SendCfg();
-        if (string.IsNullOrWhiteSpace(p.Host)) { App.Log.Error("Enter the server host first"); return; }
-        if (string.IsNullOrEmpty(DecodeB64(p.PassB64))) { App.Log.Error("Enter the server password first"); return; }
-        if (p.Type == SendServerType.ShoutcastV1 && p.Codec != SendCodec.Mp3)
-        { App.Log.Error("Shoutcast v1 takes MP3 only — switch encoder or server type"); return; }
-        if (p.Codec == SendCodec.Opus && p.Type != SendServerType.Icecast2)
-        { App.Log.Error("Opus needs an Icecast server"); return; }
-        App.Send.Version = CurrentVersion;
-        App.Send.Start(ClonePreset(p));
+        var targets = App.Store.Servers.Presets.Where(p => p.Enabled).ToList();
+        if (targets.Count == 0) { App.Log.Error("Tick at least one destination first"); return; }
+        foreach (var p in targets)
+        {
+            if (string.IsNullOrWhiteSpace(p.Host)) { App.Log.Error($"Skipped {p.Name}: no host"); continue; }
+            if (string.IsNullOrEmpty(DecodeB64(p.PassB64))) { App.Log.Error($"Skipped {p.Name}: no password"); continue; }
+            if (p.Type == SendServerType.ShoutcastV1 && p.Codec != SendCodec.Mp3)
+            { App.Log.Error($"Skipped {p.Name}: Shoutcast v1 takes MP3 only"); continue; }
+            if (p.Codec == SendCodec.Opus && p.Type != SendServerType.Icecast2)
+            { App.Log.Error($"Skipped {p.Name}: Opus needs Icecast"); continue; }
+            var eng = new SendEngine(App.Log);
+            eng.Version = CurrentVersion;
+            eng.StateChanged += () => Dispatcher.BeginInvoke(RefreshSend);
+            _senders[p] = eng;
+            eng.Start(ClonePreset(p));
+        }
+        if (_senders.Count == 0) RestartSendMonitor();
+        RefreshSend();
     }
 
     private static SendPreset ClonePreset(SendPreset p) => new()
@@ -437,56 +496,71 @@ public partial class MainWindow : Window
         Name = p.Name, Type = p.Type, Host = p.Host, Port = p.Port, Mount = p.Mount,
         User = p.User, PassB64 = p.PassB64, Bitrate = p.Bitrate, InputDeviceId = p.InputDeviceId,
         InputLoopback = p.InputLoopback, Channels = p.Channels, CutoffMin = p.CutoffMin,
-        ReconnectSec = p.ReconnectSec
+        ReconnectSec = p.ReconnectSec, Codec = p.Codec, Enabled = p.Enabled
     };
 
     private void MainTabs_Changed(object? sender, SelectionChangedEventArgs? e) => RestartSendMonitor();
 
     public void RestartSendMonitor()
     {
-        if (MainTabs.SelectedIndex == 1 && App.Send.State == SendState.Stopped)
+        if (MainTabs.SelectedIndex == 1 && _senders.Count == 0)
         {
-            var p = SendCfg();
-            App.Send.MonitorStart(p.InputDeviceId, p.InputLoopback);
+            var p = App.Store.Servers.Presets.FirstOrDefault();
+            App.Send.MonitorStart(p?.InputDeviceId, p?.InputLoopback ?? false);
         }
         else App.Send.MonitorStop();
     }
 
     private void RefreshSend()
     {
-        var s = App.Send;
-        SendStatus.Text = s.StatusText + (s.Attempt > 1 && s.State != SendState.Live ? $" (try {s.Attempt})" : "");
-        SendDetail.Text = s.State == SendState.Live
-            ? $"{s.Config.Type} {s.Config.Host}:{s.Config.Port}{s.Config.Mount} · {s.Config.Bitrate}k"
-            : "";
-        SendDot.Fill = s.State switch
-        {
-            SendState.Live => Brushes.LimeGreen,
-            SendState.Connecting or SendState.Reconnecting => Brushes.Gold,
-            _ => Brushes.Gray
-        };
+        var live = _senders.Values.Count(e => e.State == SendState.Live);
+        var busy = _senders.Values.Any(e => e.State is SendState.Connecting or SendState.Reconnecting);
+        SendStatus.Text = live > 0 ? $"Live ×{live}" : busy ? "Connecting…" : "Off air";
+        SendDetail.Text = live > 0
+            ? string.Join("  ·  ", _senders.Values.Where(e => e.State == SendState.Live)
+                .Select(e => $"{e.Config.Host}:{e.Config.Port}")) : "";
+        SendDot.Fill = live > 0 ? Brushes.LimeGreen : busy ? Brushes.Gold : Brushes.Gray;
         SendDot.Effect = new System.Windows.Media.Effects.DropShadowEffect
         {
             Color = ((SolidColorBrush)SendDot.Fill).Color,
             BlurRadius = 8,
             ShadowDepth = 0
         };
-        GoLiveButton.Content = s.State == SendState.Stopped ? "●  GO LIVE" : "■  STOP";
-        GoLiveButton.Background = s.State == SendState.Stopped
+        GoLiveButton.Content = _senders.Count == 0 ? "●  GO LIVE ALL" : "■  STOP";
+        GoLiveButton.Background = _senders.Count == 0
             ? (Brush)new SolidColorBrush(Color.FromRgb(0x2A, 0xA9, 0xE0)) : Brushes.Firebrick;
-        var up = s.LiveSince is DateTime t ? DateTime.UtcNow - t : TimeSpan.Zero;
-        SendStats.Text = s.State == SendState.Stopped && s.BytesSent == 0 ? ""
-            : $"Up {up:hh\\:mm\\:ss} · {s.BytesSent / 1024}KB sent · Drops {s.Drops}";
+        long bytes = 0;
+        int drops = 0;
+        TimeSpan up = TimeSpan.Zero;
+        foreach (var kv in _senders)
+        {
+            var preset = kv.Key;
+            var eng = kv.Value;
+            bytes += eng.BytesSent;
+            drops += eng.Drops;
+            if (eng.LiveSince is DateTime t)
+            {
+                var u = DateTime.UtcNow - t;
+                if (u > up) up = u;
+            }
+            preset.StatusLine = eng.State == SendState.Stopped ? "Off air"
+                : $"{eng.StatusText} · Up {((eng.LiveSince is DateTime lt) ? DateTime.UtcNow - lt : TimeSpan.Zero):hh\\:mm\\:ss} · {eng.BytesSent / 1024}KB · Drops {eng.Drops}";
+        }
+        SendStats.Text = _senders.Count == 0 ? ""
+            : $"Up {up:hh\\:mm\\:ss} · {bytes / 1024}KB sent · Drops {drops}";
     }
 
     private void CheckSendSilence()
     {
-        if (App.Send.State != SendState.Live || !App.Store.Settings.AlarmEnabled) return;
-        var quietFor = (DateTime.UtcNow - App.Send.LastAudibleUtc).TotalSeconds;
+        SendEngine? live = null;
+        foreach (var eng in _senders.Values)
+            if (eng.State == SendState.Live) { live = eng; break; }
+        if (live == null || !App.Store.Settings.AlarmEnabled) return;
+        var quietFor = (DateTime.UtcNow - live.LastAudibleUtc).TotalSeconds;
         if (quietFor < App.Store.Settings.SilenceSeconds) { _sendSilenceAlarmed = false; return; }
         if (_sendSilenceAlarmed) return;
         _sendSilenceAlarmed = true;
-        App.Log.Error($"Mic silent {(int)quietFor}s — nothing going out");
+        App.Log.TxError($"Mic silent {(int)quietFor}s — nothing going out");
         App.NotifyBalloon("Adoxic Sound — mic silent", $"No input for {(int)quietFor}s");
     }
 
@@ -581,6 +655,17 @@ public partial class MainWindow : Window
             Hide();
             App.Log.Info("Minimized to tray (right-click tray icon to exit)");
         }
-        else App.Engine.Stop();
+        else
+        {
+            App.Engine.Stop();
+            StopAllSenders();
+        }
+    }
+
+    public void StopAllSenders()
+    {
+        foreach (var eng in _senders.Values) { try { eng.Stop(); } catch { } }
+        foreach (var eng in _senders.Values) { try { eng.Dispose(); } catch { } }
+        _senders.Clear();
     }
 }
