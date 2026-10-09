@@ -49,7 +49,7 @@ public sealed class StreamsFile
 
 public sealed class ServersFile
 {
-    public List<SendPreset> Presets { get; set; } = new();
+    public System.Collections.ObjectModel.ObservableCollection<SendPreset> Presets { get; set; } = new();
 }
 
 /// <summary>Portable store: streams.json + settings.json next to the exe.</summary>
@@ -125,7 +125,7 @@ public sealed class AppStore
                 Servers = JsonSerializer.Deserialize<ServersFile>(File.ReadAllText(p)) ?? new();
         }
         catch { }
-        Servers.Presets ??= new();
+        Servers.Presets ??= new System.Collections.ObjectModel.ObservableCollection<SendPreset>();
         if (Settings.SampleRate is not (44100 or 48000 or 96000)) Settings.SampleRate = 48000;
         if (Settings.SilenceSeconds < 10 || Settings.SilenceSeconds > 300) Settings.SilenceSeconds = 30;
         Settings.UrlStats ??= new();
