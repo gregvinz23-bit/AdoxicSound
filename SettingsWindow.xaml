@@ -49,6 +49,12 @@
                     <ComboBoxItem Content="128 kbps"/><ComboBoxItem Content="160 kbps"/>
                     <ComboBoxItem Content="320 kbps"/>
                 </ComboBox>
+                <TextBlock Text="Encoder (MP3 works everywhere)" FontWeight="Bold"/>
+                <ComboBox x:Name="SendCodecBox" Margin="0,4,0,12" SelectionChanged="SendCodec_Changed">
+                    <ComboBoxItem Content="MP3"/>
+                    <ComboBoxItem Content="AAC"/>
+                    <ComboBoxItem Content="Opus (Icecast only)"/>
+                </ComboBox>
                 <TextBlock Text="Channels" FontWeight="Bold"/>
                 <ComboBox x:Name="SendChBox" Margin="0,4,0,12" SelectionChanged="SendCh_Changed">
                     <ComboBoxItem Content="Auto (follow input)"/>

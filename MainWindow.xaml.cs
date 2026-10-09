@@ -424,6 +424,12 @@ public partial class MainWindow : Window
         var p = SendCfg();
         if (string.IsNullOrWhiteSpace(p.Host)) { App.Log.Error("Enter the server host first"); return; }
         if (string.IsNullOrEmpty(DecodeB64(p.PassB64))) { App.Log.Error("Enter the server password first"); return; }
+        if (p.Type == SendServerType.ShoutcastV1 && p.Codec != SendCodec.Mp3)
+        { App.Log.Error("Shoutcast v1 takes MP3 only — switch encoder or server type"); return; }
+        if (p.Codec == SendCodec.Opus && p.Type != SendServerType.Icecast2)
+        { App.Log.Error("Opus needs an Icecast server"); return; }
+        if (p.Codec == SendCodec.Aac)
+        { App.Log.Error("AAC encoder lands in the next update — pick MP3 or Opus for now"); return; }
         App.Send.Version = CurrentVersion;
         App.Send.Start(ClonePreset(p));
     }

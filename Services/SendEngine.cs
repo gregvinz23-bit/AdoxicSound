@@ -1,6 +1,8 @@
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using Concentus;
+using Concentus.Enums;
 using NAudio.CoreAudioApi;
 using NAudio.Lame;
 using NAudio.Wave;
@@ -8,6 +10,7 @@ using NAudio.Wave;
 namespace AdoxicSound.Services;
 
 public enum SendServerType { Icecast2, ShoutcastV2, ShoutcastV1 }
+public enum SendCodec { Mp3, Aac, Opus }
 public enum SendState { Stopped, Connecting, Live, Reconnecting }
 
 public sealed class SendPreset
@@ -20,6 +23,7 @@ public sealed class SendPreset
     public string User { get; set; } = "source";
     public string PassB64 { get; set; } = ""; // lightly obfuscated, local file only
     public int Bitrate { get; set; } = 128;
+    public SendCodec Codec { get; set; } = SendCodec.Mp3;
     public string? InputDeviceId { get; set; }
     public bool InputLoopback { get; set; } // capture a speaker output instead of a mic
     public int Channels { get; set; } = 0; // 0 auto, 1 mono, 2 stereo
@@ -185,7 +189,7 @@ public sealed class SendEngine : IDisposable
             if (targetCh == 0) targetCh = nch;
             var req = $"PUT {c.Mount} HTTP/1.1\r\nAuthorization: Basic {cred}\r\n" +
                       $"Host: {c.Host}:{c.Port}\r\nUser-Agent: AdoxicSound/{Version}\r\n" +
-                      "Content-Type: audio/mpeg\r\n" +
+                      $"Content-Type: {ContentType(c.Codec)}\r\n" +
                       $"ice-bitrate: {c.Bitrate}\r\nice-name: Adoxic Sound\r\nice-public: 0\r\n" +
                       $"ice-audio-info: ice-bitrate={c.Bitrate};ice-channels={targetCh};ice-samplerate=44100\r\n" +
                       "Expect: 100-continue\r\n\r\n";
@@ -205,7 +209,7 @@ public sealed class SendEngine : IDisposable
             var sb = new StringBuilder();
             sb.Append(Decode(c.PassB64)).Append('\n');
             sb.Append("icy-name:Adoxic Sound\r\nicy-genre:Misc\r\nicy-url:\r\nicy-pub:1\r\n");
-            sb.Append($"icy-br:{c.Bitrate}\r\nContent-Type:audio/mpeg\r\n\r\n");
+            sb.Append($"icy-br:{c.Bitrate}\r\nContent-Type:{ContentType(c.Codec)}\r\n\r\n");
             var buf = Encoding.ASCII.GetBytes(sb.ToString());
             await stream.WriteAsync(buf, ct);
             var line = await ReadLine(stream, ct);
@@ -213,7 +217,7 @@ public sealed class SendEngine : IDisposable
                 throw new Exception("server refused (" + line.Trim() + " " + await ReadBody(stream) + ")");
         }
 
-        // capture -> resample 44100/16bit -> MP3 -> socket
+        // capture -> resample 44100/16bit -> encoder -> socket
         using var cap = OpenCapture(c.InputDeviceId, c.InputLoopback);
         var inFmt = cap.WaveFormat;
         int srcCh = Math.Max(1, Math.Min(2, inFmt.Channels));
@@ -234,13 +238,12 @@ public sealed class SendEngine : IDisposable
             catch { }
         };
         using var resampler = new MediaFoundationResampler(bwp, pcmFmt);
-        using var mp3buf = new MemoryStream(65536);
-        using var lame = new LameMP3FileWriter(mp3buf, resampler.WaveFormat, ToPreset(c.Bitrate));
+        using var encoder = CreateEncoder(c, resampler.WaveFormat);
         cap.StartRecording();
 
         SetState(SendState.Live, "Live");
         LiveSince = DateTime.UtcNow;
-        _log.TxInfo($"On air: {ServerLabel()} @ {c.Bitrate}k");
+        _log.TxInfo($"On air: {ServerLabel()} @ {c.Bitrate}k {c.Codec}");
         var pcm = new byte[16384];
         // pace to realtime: the resampler emits as fast as pulled, so throttle
         // consumption to the PCM clock or we'd flood the server with silence
@@ -260,7 +263,7 @@ public sealed class SendEngine : IDisposable
                 int n = resampler.Read(pcm, 0, pcm.Length);
                 if (n > 0)
                 {
-                    lame.Write(pcm, 0, n); // emits complete frames; never Flush() mid-stream
+                    encoder.Write(pcm, 0, n);
                     totalPcm += n;
                     var due = clockStart + TimeSpan.FromSeconds(totalPcm / byteRate);
                     var wait = due - DateTime.UtcNow;
@@ -268,10 +271,8 @@ public sealed class SendEngine : IDisposable
                     {
                         try { await Task.Delay(wait, ct); } catch { break; }
                     }
-                    if (mp3buf.Length > 0)
+                    foreach (var chunk in encoder.TakeOutput())
                     {
-                        var chunk = mp3buf.ToArray();
-                        mp3buf.SetLength(0);
                         await stream.WriteAsync(chunk, ct);
                         BytesSent += chunk.Length;
                     }
@@ -286,6 +287,162 @@ public sealed class SendEngine : IDisposable
         }
         finally { try { cap.StopRecording(); } catch { } }
         return _userStop;
+    }
+
+    private static ILiveEncoder CreateEncoder(SendPreset c, WaveFormat pcmFmt) => c.Codec switch
+    {
+        SendCodec.Aac => new AacLiveEncoder(pcmFmt, c.Bitrate),
+        SendCodec.Opus => new OpusLiveEncoder(pcmFmt, c.Bitrate),
+        _ => new Mp3LiveEncoder(pcmFmt, c.Bitrate),
+    };
+
+    /// <summary>Chunked live audio encoder: PCM in, encoded frames out.</summary>
+    private interface ILiveEncoder : IDisposable
+    {
+        void Write(byte[] pcm, int offset, int count);
+        List<byte[]> TakeOutput();
+    }
+
+    private sealed class Mp3LiveEncoder : ILiveEncoder
+    {
+        private readonly MemoryStream _buf = new(65536);
+        private readonly LameMP3FileWriter _lame;
+        public Mp3LiveEncoder(WaveFormat fmt, int kbps) =>
+            _lame = new LameMP3FileWriter(_buf, fmt, ToPreset(kbps));
+        public void Write(byte[] pcm, int offset, int count) =>
+            _lame.Write(pcm, offset, count); // emits complete frames; never Flush() mid-stream
+        public List<byte[]> TakeOutput()
+        {
+            var out_ = new List<byte[]>();
+            if (_buf.Length > 0)
+            {
+                out_.Add(_buf.ToArray());
+                _buf.SetLength(0);
+            }
+            return out_;
+        }
+        public void Dispose()
+        {
+            try { _lame.Dispose(); } catch { }
+            try { _buf.Dispose(); } catch { }
+        }
+    }
+
+    private sealed class AacLiveEncoder : ILiveEncoder
+    {
+        // NOTE: NAudio's one-shot MF AAC encoder buffers indefinitely on live
+        // feeds (proven by probe) — chunked AAC arrives via FDK next step.
+        private readonly ChunkStream _chunks = new();
+        public AacLiveEncoder(WaveFormat fmt, int kbps) =>
+            throw new NotSupportedException("AAC encoder coming in the next step");
+        public void Write(byte[] pcm, int offset, int count) =>
+            throw new NotSupportedException();
+        public List<byte[]> TakeOutput() => _chunks.TakeAll();
+        public void Dispose() { }
+    }
+
+    private sealed class OpusLiveEncoder : ILiveEncoder
+    {
+        private readonly MemoryStream _buf = new(65536);
+        private readonly Concentus.Oggfile.OpusOggWriteStream _ogg;
+        public OpusLiveEncoder(WaveFormat fmt, int kbps)
+        {
+            var enc = OpusCodecFactory.CreateEncoder(48000, fmt.Channels,
+                OpusApplication.OPUS_APPLICATION_AUDIO);
+            enc.Bitrate = Math.Clamp(kbps, 8, 320) * 1000;
+            var tags = new Concentus.Oggfile.OpusTags();
+            _ogg = new Concentus.Oggfile.OpusOggWriteStream(enc, _buf, tags,
+                inputSampleRate: fmt.SampleRate, leaveOpen: true);
+        }
+        public void Write(byte[] pcm, int offset, int count)
+        {
+            // 16-bit shorts; the writer frames (20ms), resamples to 48k and muxes Ogg
+            int shorts = count / 2;
+            var s = new short[shorts];
+            Buffer.BlockCopy(pcm, offset, s, 0, shorts * 2);
+            _ogg.WriteSamples(s, 0, shorts);
+        }
+        public List<byte[]> TakeOutput()
+        {
+            var out_ = new List<byte[]>();
+            if (_buf.Length > 0)
+            {
+                out_.Add(_buf.ToArray());
+                _buf.SetLength(0);
+            }
+            return out_;
+        }
+        public void Dispose()
+        {
+            try { _buf.Dispose(); } catch { }
+        }
+    }
+
+    /// <summary>Write-only chunk queue stream (feeds live encoders / sockets).</summary>
+    private sealed class ChunkStream : Stream
+    {
+        private readonly System.Collections.Concurrent.ConcurrentQueue<byte[]> _q = new();
+        public override bool CanRead => false;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => 0; set { } }
+        public override void Flush() { }
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            var c = new byte[count];
+            Buffer.BlockCopy(buffer, offset, c, 0, count);
+            _q.Enqueue(c);
+        }
+        public List<byte[]> TakeAll()
+        {
+            var out_ = new List<byte[]>();
+            while (_q.TryDequeue(out var c)) out_.Add(c);
+            return out_;
+        }
+    }
+
+    private sealed class BlockingFeed : IWaveProvider
+    {
+        private readonly System.Collections.Concurrent.BlockingCollection<byte[]> _q = new(64);
+        private byte[]? _cur;
+        private int _pos;
+        private bool _done;
+        public WaveFormat WaveFormat { get; }
+        public BlockingFeed(WaveFormat fmt) => WaveFormat = fmt;
+        public void Write(byte[] buf, int offset, int count)
+        {
+            if (_done) return;
+            var c = new byte[count];
+            Buffer.BlockCopy(buf, offset, c, 0, count);
+            _q.Add(c);
+        }
+        public void Complete() { _done = true; }
+        public int Read(byte[] buffer, int offset, int count)
+        {
+            int total = 0;
+            while (total < count)
+            {
+                if (_cur == null)
+                {
+                    if (!_q.TryTake(out _cur, 100))
+                    {
+                        if (_done) break;
+                        continue;
+                    }
+                    _pos = 0;
+                }
+                int n = Math.Min(count - total, _cur.Length - _pos);
+                Buffer.BlockCopy(_cur, _pos, buffer, offset + total, n);
+                total += n;
+                _pos += n;
+                if (_pos >= _cur.Length) _cur = null;
+            }
+            return total;
+        }
     }
 
     private static async Task<int> ProbeCaptureChannels(string? id, bool loopback)
@@ -348,6 +505,13 @@ public sealed class SendEngine : IDisposable
         <= 160 => LAMEPreset.ABR_160,
         <= 256 => LAMEPreset.ABR_256,
         _ => LAMEPreset.ABR_320,
+    };
+
+    private static string ContentType(SendCodec codec) => codec switch
+    {
+        SendCodec.Aac => "audio/aac",
+        SendCodec.Opus => "audio/ogg",
+        _ => "audio/mpeg",
     };
 
     private string ServerLabel() =>

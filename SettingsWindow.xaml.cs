@@ -37,6 +37,7 @@ public partial class SettingsWindow : Window
         var sp = SendCfg();
         SendRateBox.SelectedIndex = Math.Max(0, Array.IndexOf(SendRates, sp.Bitrate));
         if (SendRateBox.SelectedIndex < 0) SendRateBox.SelectedIndex = 2;
+        SendCodecBox.SelectedIndex = Math.Max(0, Math.Min(2, (int)sp.Codec));
         SendChBox.SelectedIndex = sp.Channels switch { 1 => 1, 2 => 2, _ => 0 };
         SendCutBox.SelectedIndex = Math.Max(0, Array.IndexOf(SendCuts, sp.CutoffMin));
         SendRetryBox.SelectedIndex = Math.Max(0, Array.IndexOf(SendRetries, sp.ReconnectSec));
@@ -191,6 +192,14 @@ public partial class SettingsWindow : Window
         SendCfg().Bitrate = SendRates[SendRateBox.SelectedIndex];
         App.Store.SaveServers();
         App.Log.Info($"Send bitrate: {SendCfg().Bitrate} kbps (applies on next go-live)");
+    }
+
+    private void SendCodec_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || SendCodecBox.SelectedIndex < 0) return;
+        SendCfg().Codec = (SendCodec)SendCodecBox.SelectedIndex;
+        App.Store.SaveServers();
+        App.Log.Info("Send encoder: " + SendCfg().Codec);
     }
 
     private void SendCh_Changed(object sender, SelectionChangedEventArgs e)
