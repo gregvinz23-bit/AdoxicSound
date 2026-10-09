@@ -330,15 +330,44 @@ public sealed class SendEngine : IDisposable
 
     private sealed class AacLiveEncoder : ILiveEncoder
     {
-        // NOTE: NAudio's one-shot MF AAC encoder buffers indefinitely on live
-        // feeds (proven by probe) — chunked AAC arrives via FDK next step.
-        private readonly ChunkStream _chunks = new();
-        public AacLiveEncoder(WaveFormat fmt, int kbps) =>
-            throw new NotSupportedException("AAC encoder coming in the next step");
-        public void Write(byte[] pcm, int offset, int count) =>
-            throw new NotSupportedException();
-        public List<byte[]> TakeOutput() => _chunks.TakeAll();
-        public void Dispose() { }
+        private readonly FdkAacEncoder _enc;
+        private readonly int _channels;
+        private readonly List<short> _pending = new();
+        private readonly List<byte[]> _stash = new();
+        public AacLiveEncoder(WaveFormat fmt, int kbps)
+        {
+            _channels = Math.Max(1, Math.Min(2, fmt.Channels));
+            _enc = new FdkAacEncoder(_channels, fmt.SampleRate, kbps * 1000);
+        }
+        public void Write(byte[] pcm, int offset, int count)
+        {
+            int shorts = count / 2;
+            var all = new short[_pending.Count + shorts];
+            for (int i = 0; i < _pending.Count; i++) all[i] = _pending[i];
+            Buffer.BlockCopy(pcm, offset, all, _pending.Count * 2, shorts * 2);
+            _pending.Clear();
+            int frame = _enc.FrameLength * _channels;
+            int at = 0;
+            while (at + frame <= all.Length)
+            {
+                var slice = new short[frame];
+                Array.Copy(all, at, slice, 0, frame);
+                var adts = _enc.Encode(slice, 0, _enc.FrameLength);
+                if (adts.Length > 0) _stash.Add(adts);
+                at += frame;
+            }
+            for (int i = at; i < all.Length; i++) _pending.Add(all[i]);
+        }
+        public List<byte[]> TakeOutput()
+        {
+            var out_ = new List<byte[]>(_stash);
+            _stash.Clear();
+            return out_;
+        }
+        public void Dispose()
+        {
+            try { _enc.Dispose(); } catch { }
+        }
     }
 
     private sealed class OpusLiveEncoder : ILiveEncoder

@@ -22,6 +22,10 @@
   <ItemGroup>
     <Resource Include="Adoxic_Sound_Logo.png" />
     <Resource Include="Adoxic_Sound_Icon.ico" />
+    <Content Include="native\libfdk-aac-2.dll">
+      <Link>libfdk-aac-2.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <!-- Audio-only VLC diet: drop video/subtitle/stream-out/discovery plugins + video-only codecs -->
