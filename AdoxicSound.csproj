@@ -5,7 +5,7 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <RootNamespace>AdoxicSound</RootNamespace>
     <AssemblyName>AdoxicSound</AssemblyName>
-    <Version>1.5.0</Version>
+    <Version>1.6.0</Version>
     <Company>Mantraix Software Solutions</Company>
     <Product>Adoxic Sound</Product>
     <Description>A portable Windows studio for live internet radio</Description>
