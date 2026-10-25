@@ -98,10 +98,10 @@
                     <ComboBoxItem Content="320 kbps"/>
                 </ComboBox>
                 <TextBlock Text="Save folder" FontWeight="Bold"/>
-                <StackPanel Orientation="Horizontal" Margin="0,4,0,12">
-                    <TextBox x:Name="RecFolderBox" Width="250" Margin="0,0,6,0" TextChanged="RecFolder_Changed"/>
-                    <Button x:Name="RecBrowse" Content="Browse" Click="RecBrowse_Click"/>
-                </StackPanel>
+                <DockPanel Margin="0,4,0,12">
+                    <Button x:Name="RecBrowse" Content="Browse" DockPanel.Dock="Right" Click="RecBrowse_Click"/>
+                    <TextBox x:Name="RecFolderBox" Margin="0,0,6,0" TextChanged="RecFolder_Changed"/>
+                </DockPanel>
                 <TextBlock Text="Empty folder = portable records\ next to the app."
                            Foreground="{DynamicResource FgDim}" TextWrapping="Wrap"/>
                 <TextBlock Text="Split every" FontWeight="Bold" Margin="0,6,0,0"/>
